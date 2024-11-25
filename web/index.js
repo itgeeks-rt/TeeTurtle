@@ -17,7 +17,7 @@ import db from "./server/models/index.js"
 
 
 
-// test
+
 
 const PORT = parseInt(
   process.env.BACKEND_PORT || process.env.PORT || "3000",
