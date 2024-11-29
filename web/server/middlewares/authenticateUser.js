@@ -1,12 +1,12 @@
 import shopify from "../../shopify.js"
 import { ErrorMessage } from "../constants/messages.js";
 import { statusCode } from "../constants/statusCodes.js";
-import { sendResponse } from "../utils/sendResponse.js";
+import { sendResponse } from "../utils/sendResponse.js"; 
 export const authenticateUser=async (req,res,next)=>{
     const session = res.locals?.shopify?.session
-    let shop = req.query.shop || session.shop;
+    let shop = req.query.shop || session?.shop;
     if(!shop){
-        sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.SHOP_UNAVAILABLE)
+     return   sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.SHOP_UNAVAILABLE)
     }
     let currentSession = await shopify.config.sessionStorage.findSessionsByShop(shop);
     req.currentSession=currentSession[0]

@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "e50e0b8c44ce565622d1184c2afb878d"
-application_url = "https://british-radar-wear-times.trycloudflare.com"
+application_url = "https://kills-julia-lenders-find.trycloudflare.com"
 embedded = true
 name = "testing-products-app"
 handle = "testing-products-app"
@@ -15,9 +15,9 @@ scopes = "write_products,write_files,write_themes"
 
 [auth]
 redirect_urls = [
-  "https://british-radar-wear-times.trycloudflare.com/auth/callback",
-  "https://british-radar-wear-times.trycloudflare.com/auth/shopify/callback",
-  "https://british-radar-wear-times.trycloudflare.com/api/auth/callback"
+  "https://kills-julia-lenders-find.trycloudflare.com/auth/callback",
+  "https://kills-julia-lenders-find.trycloudflare.com/auth/shopify/callback",
+  "https://kills-julia-lenders-find.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
