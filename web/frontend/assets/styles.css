@@ -1,0 +1,9 @@
+.template-action__button .Polaris-ButtonGroup {
+    justify-content: flex-end;
+}
+.table-loading__spinner {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+}
