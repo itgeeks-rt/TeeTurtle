@@ -9,6 +9,9 @@ export const authenticateUser=async (req,res,next)=>{
      return   sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.SHOP_UNAVAILABLE)
     }
     let currentSession = await shopify.config.sessionStorage.findSessionsByShop(shop);
+    if(!currentSession){
+        return   sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.SESSION_NOT_FOUND)
+    }
     req.currentSession=currentSession[0]
     
     next()

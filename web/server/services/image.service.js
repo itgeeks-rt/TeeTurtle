@@ -9,9 +9,14 @@ const product = db.productModel
 
 
 export const uploadImage = async (req, res, session) => {
+
+
+  // let bufferObj = Buffer.from(string, "base64");
+  // console.log(bufferObj);
+
+
   const filename = req.body.filename
 
-  console.log("files---", req.body);
 
   if (!req.file || !req.file.buffer) {
 
@@ -127,7 +132,7 @@ export const uploadImage = async (req, res, session) => {
     variables: {
       "files": [
         {
-          "alt": "Image Description alt value",
+          "alt": filename,
           "contentType": "IMAGE",
           "originalSource": url
         }
@@ -138,7 +143,7 @@ export const uploadImage = async (req, res, session) => {
 
 
 
-  console.log(fileResponse.data);
+  console.log(fileResponse.data.fileCreate.files[0]);
 
 
   const imageId = fileResponse.data.fileCreate.files[0].id

@@ -53,4 +53,5 @@ export const ErrorMessage = {
   PLUGIN_NOT_EXIST: "plugin not added or Off.",
   DATA_NOT_UPDATED: "Data Not Updated.",
   IMAGE_NOT_FOUND: "Image Not found.",
+  SESSION_NOT_FOUND:"Session Not Found"
 };

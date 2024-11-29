@@ -1,0 +1,29 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
+name = "Dev-TT-Site-Comp-Generator"
+handle = "dev-tt-site-comp-generator"
+application_url = "https://hour-don-fifteen-ricky.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+dev_store_url = "itgeeks-test.myshopify.com"
+automatically_update_urls_on_dev = true
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = ""
+
+[auth]
+redirect_urls = [
+  "https://hour-don-fifteen-ricky.trycloudflare.com/auth/callback",
+  "https://hour-don-fifteen-ricky.trycloudflare.com/auth/shopify/callback",
+  "https://hour-don-fifteen-ricky.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+[pos]
+embedded = false
