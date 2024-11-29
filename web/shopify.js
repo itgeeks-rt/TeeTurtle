@@ -44,6 +44,9 @@ const shopify = shopifyApp({
     'mysql://root:itgeeks12345@localhost/testingsessionstoragedb'
   ),
 
+
+  // sessionStorage:new MySQLSessionStorage({})
+
 });
  
 export default shopify;

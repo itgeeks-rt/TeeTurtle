@@ -10,8 +10,6 @@ export const uploadImage = async (req, res) => {
 
    try {
 
-     
-
     const session=req.currentSession
 
     const result = await services.uploadImage(req, res,session);
@@ -65,6 +63,46 @@ export const deleteImage = async (req, res) => {
     const result = await services.deleteImage(req, res,session);
     
     sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_DELETED,result)
+    
+   } catch (error) {
+    console.log("error in upload Image : ",error);
+    sendResponse(res,statusCode.INTERNAL_SERVER_ERROR,false,ErrorMessage.INTERNAL_SERVER_ERROR,error)
+   }
+   
+   
+};
+export const productImage = async (req, res) => {
+    
+    
+
+   try {
+
+     
+
+    const session=req.currentSession
+
+    const result = await services.productImage(req, res,session);
+    
+    sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_DELETED,result)
+    
+   } catch (error) {
+    console.log("error in upload Image : ",error);
+    sendResponse(res,statusCode.INTERNAL_SERVER_ERROR,false,ErrorMessage.INTERNAL_SERVER_ERROR,error)
+   }
+   
+   
+};
+export const getImageList = async (req, res) => {
+   
+   try {
+
+     
+
+    const session=req.currentSession
+
+    const result = await services.getImageList(req, res,session);
+    
+    sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_FETCHED,result)
     
    } catch (error) {
     console.log("error in upload Image : ",error);

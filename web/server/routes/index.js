@@ -8,5 +8,6 @@ const router = express.Router();
 
 router.use("/collection",collectionRoute)
 router.use("/image"  ,imageRoute)
+// router.use("/product"  ,productRoute)
 
 export default router

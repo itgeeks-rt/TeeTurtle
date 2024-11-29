@@ -15,6 +15,7 @@ import {authenticateUser} from "./server/middlewares/authenticateUser.js";
 import bodyParser from "body-parser";
 import db from "./server/models/index.js"
 
+import cors from "cors"
 
 
 
@@ -46,13 +47,17 @@ app.post(
 
 
 app.use(bodyParser.json());
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.urlencoded({ extended: true }));
+
+app.use(cors());
+
 
 // If you are adding routes outside of the /api path, remember to
 // also add a proxy rule for them in web/frontend/vite.config.js
 
-db.sequelize.sync()
+db.sequelize.sync({alter:true})
   .then(() => {
     console.log("Synced  db. databse connection successfull------------");
   })
@@ -89,7 +94,7 @@ app.get("/api/products/all", async (_req, res) => {
 
  
 
-  res.status(200).send({ response:"hello world" });
+  res.status(200).send({ response:"all products" });
 });
 
 app.post("/api/products", async (_req, res) => {
@@ -109,16 +114,31 @@ app.post("/api/products", async (_req, res) => {
 app.use(shopify.cspHeaders());
 app.use(serveStatic(STATIC_PATH, { index: false }));
 
+
 app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
-  return res
-    .status(200)
-    .set("Content-Type", "text/html")
-    .send(
-      readFileSync(join(STATIC_PATH, "index.html"))
-        .toString()
-        .replace("%VITE_SHOPIFY_API_KEY%", process.env.SHOPIFY_API_KEY || "")
-    );
+  try {
+    const html = readFileSync(join(STATIC_PATH, "index.html"))
+      .toString()
+      .replace("%VITE_SHOPIFY_API_KEY%", process.env.SHOPIFY_API_KEY || "");
+
+    res.status(200).set("Content-Type", "text/html").send(html);
+  } catch (error) {
+    console.error("Error serving index.html:", error);
+    res.status(500).send("Internal Server Error");
+  }
 });
+
+
+// app.use("/*", shopify.ensureInstalledOnShop(), async (_req, res, _next) => {
+//   return res
+//     .status(200)
+//     .set("Content-Type", "text/html")
+//     .send(
+//       readFileSync(join(STATIC_PATH, "index.html"))
+//         .toString()
+//         .replace("%VITE_SHOPIFY_API_KEY%", process.env.SHOPIFY_API_KEY || "")
+//     );
+// });
 
 
 
