@@ -10,22 +10,11 @@ const product = db.productModel
 
 export const uploadImage = async (req, res, session) => {
 
-
-  // let bufferObj = Buffer.from(string, "base64");
-  // console.log(bufferObj);
-
-
-  const filename = req.body.filename
+  const imageName = req.body.imageName
+  const category = req.body.category
+  const fileBase64=req.body.fileBase64
 
 
-  if (!req.file || !req.file.buffer) {
-
-    return {
-      status: false,
-      message: "There was missing File buffer"
-    }
-
-  }
   const staged_Uploads_Create_Mutation = `
   mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
   stagedUploadsCreate(input: $input) {
@@ -48,7 +37,7 @@ export const uploadImage = async (req, res, session) => {
     variables: {
       "input": [
         {
-          "filename": filename,
+          "filename": imageName,
           "mimeType": "image/jpg",
           "httpMethod": "POST",
           "resource": "IMAGE"
@@ -64,8 +53,7 @@ export const uploadImage = async (req, res, session) => {
 
   if (!target) {
     return {
-      status: false,
-      message: "There was an error form shopify End"
+      status: false
     }
   }
 
@@ -78,29 +66,23 @@ export const uploadImage = async (req, res, session) => {
     form.append(obj.name, obj.value)
   }
 
+  let bufferObj = Buffer.from(fileBase64, "base64");
 
-  // form.append('file', fs.createReadStream(req.file.path));
-  form.append("file", req.file.buffer)
-
-
-  console.log("form ----", form);
+  form.append("file",bufferObj)
 
   const uploadRespose = await axios.post(URL, form, {
     headers: form.getHeaders(),
   });
 
 
-  console.log("upload response---", uploadRespose);
-
-
-
   const $ = cheerio.load(uploadRespose.data);
   const url = $("location").text();
-  console.log("url------------", url);
+  // console.log("url------------", url);
 
   if (!url) {
     return {
       status: false,
+      error:"Can't get URL"
     }
   }
 
@@ -112,6 +94,7 @@ export const uploadImage = async (req, res, session) => {
         alt
         updatedAt
         createdAt
+        fileStatus
        preview{
        image{
        url
@@ -132,7 +115,7 @@ export const uploadImage = async (req, res, session) => {
     variables: {
       "files": [
         {
-          "alt": filename,
+          "alt": imageName,
           "contentType": "IMAGE",
           "originalSource": url
         }
@@ -145,37 +128,92 @@ export const uploadImage = async (req, res, session) => {
 
   console.log(fileResponse.data.fileCreate.files[0]);
 
+  const fileStatus=fileResponse?.data?.fileCreate?.files[0]?.fileStatus;
+
+  if(fileStatus==="UPLOADED"){
 
   const imageId = fileResponse.data.fileCreate.files[0].id
   const updatedAt = fileResponse.data.fileCreate.files[0].updatedAt
   const createdAt = fileResponse.data.fileCreate.files[0].createdAt
 
-  const result = product.create({ productId: 9, imageId: imageId, imageURL: url, updatedAt: updatedAt, createdAt: createdAt })
-  //  return fileResponse.data
 
+ 
+  const data = await getImageStatus(req, res, session, imageId);
+  console.log("data -is",data);
 
-
-
-
-  // console.log(form);
+  
+  const  result = product.create({
+         productId: 9,
+         imageId: imageId,
+         imageURL:data.node?.image?.url ,
+         updatedAt: updatedAt,
+         createdAt: createdAt,
+         category:category ,
+         imageName:imageName})
   return result
-
-  // 
+ }
+ else{
+  return {
+    status:false,
+    message:"Can not upload Image"
+  }
+ }
+ 
 
 };
 
 
-export const getImage = async (req, res, session) => {
+const getImageStatus = async (req, res, session, imageId) => {
+  const getStatus = async () => {
+    const get_image_query = `query {
+      node(id: "${imageId}") {
+        id
+        ... on MediaImage {
+          status
+          image {
+            url
+          }
+          originalSource {
+            url
+          }
+        }
+      }
+    }`;
+
+    const client = new shopify.api.clients.Graphql({ session });
+    const response = await client.request(get_image_query);
+
+    const status = response.data?.node?.status;
+    console.log("Image status---", status);
+
+    if (status !== "READY"  || status==="PROCESSING"  ) {
+      console.log("Status is  not READY trying again ");
+      await new Promise((resolve) => setTimeout(resolve, 500)); 
+      return await getStatus(); 
+    }
+
+    return response.data; 
+  };
+  console.time();
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  console.timeEnd();
+  return await getStatus();
+};
 
 
 
+export const getImage = async (req,res,session) => {
 
-  const imageId = req.body.imageId
+
+
+  const imageId = req.body.imageId 
 
   const get_image_query = `query {
     node(id: "${imageId}") {
       id
       ... on MediaImage {
+      status
+      
         image {
           url
         }
@@ -190,6 +228,8 @@ export const getImage = async (req, res, session) => {
   const client = new shopify.api.clients.Graphql({ session });
 
   const response = await client.request(get_image_query);
+
+  console.log(response.data?.node?.status);
 
   return response.data
 
@@ -219,12 +259,34 @@ export const deleteImage = async (req, res, session) => {
       "input": [
 
         `${imageId}`
-      ]
+      ] 
     }
 
   });
+  console.log("response--",response.data.fileDelete.deletedFileIds);  //if file does it exist response will be null
 
-  return response.data
+  if(response==null){
+    return {
+      status:false,
+      message:"Image does not exist"
+    } 
+  }
+  const isDeleted =  response.data.fileDelete.deletedFileIds.length > 0  ?  true  : false
+
+  if(isDeleted){
+
+    const result=product.destroy({ where: { imageId } })
+    return result
+
+  }
+  else{
+    return {
+      status:false,
+      message:"Can not delete image"
+    }
+  }
+
+  
 
 }
 
@@ -301,7 +363,9 @@ export const getImageList = async (req, res, session) => {
         { category: { [Op.like]: '%' + searchQuery + '%' } },
         { imageName: { [Op.like]: '%' + searchQuery + '%' } }
       ]
-    }
+    },
+    order: [['updatedAt', 'DESC']],
+
 
   });
 

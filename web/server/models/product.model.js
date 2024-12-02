@@ -20,7 +20,7 @@ const  productModel = (sequelize, Sequelize) => {
     type: Sequelize.DATEONLY
     },
     updatedAt: {
-    type: Sequelize.DATEONLY
+    type: Sequelize.DATE
     }
     });
     return product_details;
