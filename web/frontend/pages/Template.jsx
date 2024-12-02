@@ -1,4 +1,4 @@
-import { 
+import {
   Page,
   EmptySearchResult,
   ButtonGroup,
@@ -8,7 +8,7 @@ import {
   Box,
   Text,
   Select,
-  Card, 
+  Card,
   TextField,
   Icon,
   useBreakpoints,
@@ -18,97 +18,90 @@ import {
   BlockStack,
 } from "@shopify/polaris";
 import '../assets/styles.css';
-import {Modal, TitleBar, useAppBridge} from '@shopify/app-bridge-react';
-
+import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
+import variable from '../Variable';
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteIcon } from '@shopify/polaris-icons';
-import {NoteIcon} from '@shopify/polaris-icons';
+import { NoteIcon } from '@shopify/polaris-icons';
 
 export default function Template() {
   const { t } = useTranslation();
-  const listLimit = 4;
+  const listLimit = 7;
   const shopify = useAppBridge();
+  const baseUrl = variable.Base_Url;
   const [imageName, setImageName] = useState("");
   const [fetchImages, setFetchImages] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const [pagination, setPagination] = useState([]);
-  const [hasNext, setHasNext] = useState(false); 
+  const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [requestBody, setRequestBody] = useState({ 
+  const [requestBody, setRequestBody] = useState({
     page: 1, 
     limit: listLimit,
-  }); 
-  const [selected, setSelected] = useState('Classic Cotton');
-  
-  const category = [
-    {label: 'Classic Cotton', value: 'Classic Cotton'},
-    {label: 'Premium Cotton', value: 'Premium Cotton'},
-    {label: 'Long Sleeve', value: 'Long Sleeve'},
-    {label: 'Crew Neck', value: 'Crew Neck'},
-    {label: 'Hoodie', value: 'Hoodie'},
-    {label: 'Triblend', value: 'Triblend'},
-    {label: 'V-Neck', value: 'V-Neck'},
-    {label: 'Tank Top', value: 'Tank Top'},
-    {label: 'Mugs', value: 'Mugs'},
-  ];
- 
+  });
+  const [selected, setSelected] = useState('Select');
+  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
+  const [isButtonLoading, setIsButtonLoading] = useState(false);
 
+  const category = [
+    { label: 'Select', value: 'Select', disabled: true },
+    { label: 'Classic Cotton', value: 'Classic Cotton' },
+    { label: 'Premium Cotton', value: 'Premium Cotton' },
+    { label: 'Long Sleeve', value: 'Long Sleeve' },
+    { label: 'Crew Neck', value: 'Crew Neck' },
+    { label: 'Hoodie', value: 'Hoodie' },
+    { label: 'Triblend', value: 'Triblend' },
+    { label: 'V-Neck', value: 'V-Neck' },
+    { label: 'Tank Top', value: 'Tank Top' },
+    { label: 'Mugs', value: 'Mugs' },
+  ];
+
+
+  /* Fetch template images from the database using AJAX. */
   useEffect(() => {
     let myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
-    fetch("https://2597-49-249-2-6.ngrok-free.app/external/image/imagesList?shop=dev-themes-testing.myshopify.com", {
+    fetch(`${baseUrl}/external/image/imagesList?shop=itgeeks-test.myshopify.com`, {
       method: "POST",
       body: JSON.stringify(requestBody),
       headers: myHeaders,
-      redirect: 'follow'  
+      redirect: 'follow'
     })
       .then((res) => res.json())
       .then((data) => {
         const items = data?.result.rows || [];
-        const itemPagination = data?.result.pagination || []; 
+        const itemPagination = data?.result.pagination || [];
         setPagination(itemPagination);
-        setFetchImages(items);   
+        setFetchImages(items);
       })
       .catch((err) => console.error(err));
   }, [requestBody]);
 
+
+  /* Pagination is functioning based on template images. */
   useEffect(() => {
     if (pagination && pagination.count > pagination.per_page) {
       const totalPages = Math.ceil(pagination.count / pagination.per_page);
       setHasNext(pagination.current_page < totalPages);
       setHasPrevious(pagination.current_page > 1);
       setCurrentPage(pagination.current_page);
-    }else{ 
+    } else {
       setHasNext(false);
       setHasPrevious(false);
     }
   }, [pagination]);
-  
 
-  const handleSearchChange = (value) => { 
-    setSearchValue(value); 
+  /* Filter images using the search bar and fetch template images from the database via AJAX. */
+  const handleSearchChange = (value) => {
+    setSearchValue(value);
     const updatedRequestBody = {
-      page: currentPage,
+      page: 1,
       limit: listLimit,
       ...(value && value.length >= 3 ? { searchQuery: value } : {}),
     };
     setRequestBody(updatedRequestBody);
-  };
-
-  const imageNameInput = (value) => { 
-    setImageName(value); 
-  };
-
-  const handleSelectChange = useCallback(
-    (value) => setSelected(value),
-    [],
-  );
-
-  const resourceName = {
-    singular: 'order',
-    plural: 'orders',
   };
 
   const emptyStateMarkup = (
@@ -119,45 +112,118 @@ export default function Template() {
     />
   );
 
+  /* Upload template images using modal validation and post the data to the server. */
+  const imageNameInput = (value) => {
+    setImageName(value);
+    validateForm(value, selected, uploadedFile);
+  };
+  const handleSelectChange = (value) => {
+    setSelected(value);
+    validateForm(imageName, value, uploadedFile);
+  };
+  const validateForm = (name, category, file) => {
+    if (name && category && category !== 'Select' && file) {
+      setIsButtonEnabled(true);
+    } else {
+      setIsButtonEnabled(false);
+    }
+  };
+  const handleSubmit = () => {
+    setIsButtonLoading(true);
+    const requestBody = {
+      imageName: imageName,
+      category: selected,  
+      fileBase64: uploadedFileBase64,
+    };
+
+    let myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
+      method: "POST",
+      body: JSON.stringify(requestBody),
+      headers: myHeaders,
+      redirect: 'follow'
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setIsButtonLoading(false);  
+        console.log(data)
+      })
+      .catch((err) => console.error(err));
+  };
 
   const [file, setFile] = useState(null);
+  const [uploadedFileBase64, setUploadedFileBase64] = useState("");
 
   const handleDropZoneDrop = useCallback((_dropFiles, acceptedFiles, _rejectedFiles) => {
-    setFile(acceptedFiles[0]);
-  }, []);
+    const file = acceptedFiles[0];
 
-  const validImageTypes = ['image/gif', 'image/jpeg', 'image/png'];
+    if (file && validImageTypes.includes(file.type)) {
+      setFile(file);
+      validateForm(imageName, selected, file);
+      convertToBase64(file);
+    } else {
+      setFile(null);
+      setUploadedFileBase64("");
+      validateForm(imageName, selected, null);
+    }
+  }, [imageName, selected]);
 
-  const fileUpload = !file && <DropZone.FileUpload />;
+  const validImageTypes = ["image/jpeg", "image/png"];
+
+  const convertToBase64 = (file) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedFileBase64(reader.result.split(',')[1]); // Save base64 encoded string
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const fileUpload = !file && <DropZone.FileUpload actionHint="Accepts only .jpg and .png" />;
   const uploadedFile = file && (
-    <BlockStack>
-      <Thumbnail
-        size="small"
-        alt={file.name}
-        source={
-          validImageTypes.includes(file.type)
-            ? window.URL.createObjectURL(file)
-            : NoteIcon
-        }
-      />
-      <div>
-        {file.name}{' '}
+    <Box as="div" padding={{ xs: '400', sm: '400' }}>
+      <BlockStack gap="150" inlineAlign="center" align="center">
+        <Thumbnail
+          size="small"
+          alt={file.name}
+          source={
+            validImageTypes.includes(file.type)
+              ? window.URL.createObjectURL(file)
+              : NoteIcon
+          }
+        />
         <Text variant="bodySm" as="p">
-          {file.size} bytes
+          {file.name}{' '}
         </Text>
-      </div>
-    </BlockStack>
+        <Button
+          variant="plain"
+          tone="critical"
+          onClick={() => {
+            setFile(null);
+            validateForm(imageName, selected, null);
+          }}
+        >
+          Change
+        </Button>
+      </BlockStack>
+    </Box>
   );
+
+
+  const resourceName = {
+    singular: 'image',
+    plural: 'images',
+  };
 
   const rowMarkup = fetchImages.map(
     (
-      {id, imageURL, imageName, createdAt, category},
+      { id, imageURL, imageName, createdAt, category },
       index,
     ) => (
       <IndexTable.Row
         id={id}
         key={id}
-        position={index} 
+        position={index}
       >
         <IndexTable.Cell>
           <Thumbnail
@@ -187,14 +253,15 @@ export default function Template() {
   return (
     <Page
       title="Templates"
-      primaryAction={{ content: "Upload image", onAction: () => shopify.modal.show('upload-image')}}
-    > 
-      <Modal id="upload-image"> 
-        <Box padding={{xs: '400', sm: '400'}}>
+      primaryAction={{ content: "Create new template", onAction: () => shopify.modal.show('upload-image') }}
+      
+    >
+      <Modal id="upload-image">
+        <Box padding={{ xs: '400', sm: '400' }}>
           <FormLayout>
             <TextField
-              label="Image Name (Maximum of 12 character)"
-              maxLength="12"
+              label="Image Name (Maximum of 15 character)"
+              maxLength="15"
               value={imageName}
               onChange={imageNameInput}
               placeholder="Image Name"
@@ -207,18 +274,26 @@ export default function Template() {
               onChange={handleSelectChange}
               value={selected}
             />
-            <DropZone onDrop={handleDropZoneDrop}>
+            <DropZone onDrop={handleDropZoneDrop} accept={validImageTypes} variableHeight>
               {uploadedFile}
               {fileUpload}
             </DropZone>
           </FormLayout>
         </Box>
-        <TitleBar title="Upload New Image">
-          <button variant="primary">Upload</button>
-        </TitleBar>
+        <TitleBar title="Create template and upload new image"></TitleBar>
+        <Box as="div" padding={{ xs: '400', sm: '400' }} borderBlockStartWidth="0165" borderColor="border-brand">
+          <BlockStack as="div" inlineAlign="end">
+            <Button variant="primary" 
+              disabled={!isButtonEnabled} 
+              onClick={handleSubmit} 
+              loading={isButtonLoading}>
+              Upload
+            </Button>
+          </BlockStack> 
+        </Box>
       </Modal>
-      <Card padding={{xs: '0', sm: '0'}}>
-        <Box padding={{xs: '400', sm: '400'}}>
+      <Card padding={{ xs: '0', sm: '0' }}>
+        <Box padding={{ xs: '400', sm: '400' }}>
           <TextField
             value={searchValue}
             onChange={handleSearchChange}
@@ -227,14 +302,14 @@ export default function Template() {
             onClearButtonClick={() => handleSearchChange("")}
           />
         </Box>
-        <Box position="relative">
+        <Box position="relative">  
           <IndexTable
             condensed={useBreakpoints().smDown}
             resourceName={resourceName}
             itemCount={fetchImages.length}
-            emptyState={emptyStateMarkup}
+            emptyState={emptyStateMarkup} 
             headings={[
-              { title: "Image" }, 
+              { title: "Image" },
               { title: "Name" },
               { title: "Category" },
               { title: "Create Date", alignment: "end" },
@@ -242,23 +317,23 @@ export default function Template() {
             ]}
             selectable={false}
             pagination={{
-              hasPrevious: hasPrevious,  
-              hasNext: hasNext, 
+              hasPrevious: hasPrevious,
+              hasNext: hasNext,
               onNext: () => {
-                setRequestBody({page: currentPage+1, limit: listLimit});
+                setRequestBody({ page: currentPage + 1, limit: listLimit });
               },
               onPrevious: () => {
-                setRequestBody({page: currentPage-1, limit: listLimit});
+                setRequestBody({ page: currentPage - 1, limit: listLimit });
               },
             }}
           >
             {rowMarkup}
           </IndexTable>
           <Box as="span" className="table-loading__spinner" position="absolute">
-              <Spinner accessibilityLabel="Loading Spinner" size="large" />
+            <Spinner accessibilityLabel="Loading Spinner" size="large" />
           </Box>
         </Box>
       </Card>
-    </Page> 
+    </Page>
   );
 }
