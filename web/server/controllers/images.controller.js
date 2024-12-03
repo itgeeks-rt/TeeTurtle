@@ -13,10 +13,6 @@ export const uploadImage = async (req, res) => {
     const session=req.currentSession
 
     const result = await services.uploadImage(req, res,session);
-   //  if(result.result==false  && result.status==false){
-   //  sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.IMAGE_NOT_FOUND)
-   //  }
-   //  else
     sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_CREATED,result)
     
    } catch (error) {
@@ -42,7 +38,7 @@ export const getImage = async (req, res) => {
     sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_FETCHED,result)
     
    } catch (error) {
-    console.log("error in upload Image : ",error);
+    console.log("error in getImage  : ",error);
     sendResponse(res,statusCode.INTERNAL_SERVER_ERROR,false,ErrorMessage.INTERNAL_SERVER_ERROR,error)
    }
    
@@ -56,16 +52,14 @@ export const deleteImage = async (req, res) => {
 
    try {
 
-     
-
     const session=req.currentSession
 
     const result = await services.deleteImage(req, res,session);
-    
     sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_DELETED,result)
     
+    
    } catch (error) {
-    console.log("error in upload Image : ",error);
+    console.log("error in deleteImage  : ",error);
     sendResponse(res,statusCode.INTERNAL_SERVER_ERROR,false,ErrorMessage.INTERNAL_SERVER_ERROR,error)
    }
    
@@ -76,8 +70,6 @@ export const productImage = async (req, res) => {
     
 
    try {
-
-     
 
     const session=req.currentSession
 

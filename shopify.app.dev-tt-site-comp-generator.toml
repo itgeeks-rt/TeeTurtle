@@ -1,7 +1,11 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
+<<<<<<< HEAD
 application_url = "https://senior-architecture-standing-exceed.trycloudflare.com"
+=======
+application_url = "https://publications-airplane-jonathan-curtis.trycloudflare.com"
+>>>>>>> 23dc150271e959b0ebea26a912f7d6fbb8ba0735
 embedded = true
 name = "Dev-TT-Site-Comp-Generator"
 handle = "dev-tt-site-comp-generator"
@@ -15,9 +19,15 @@ scopes = "write_products,write_files,write_themes"
 
 [auth]
 redirect_urls = [
+<<<<<<< HEAD
   "https://senior-architecture-standing-exceed.trycloudflare.com/auth/callback",
   "https://senior-architecture-standing-exceed.trycloudflare.com/auth/shopify/callback",
   "https://senior-architecture-standing-exceed.trycloudflare.com/api/auth/callback"
+=======
+  "https://publications-airplane-jonathan-curtis.trycloudflare.com/auth/callback",
+  "https://publications-airplane-jonathan-curtis.trycloudflare.com/auth/shopify/callback",
+  "https://publications-airplane-jonathan-curtis.trycloudflare.com/api/auth/callback"
+>>>>>>> 23dc150271e959b0ebea26a912f7d6fbb8ba0735
 ]
 
 [pos]

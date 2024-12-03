@@ -46,9 +46,9 @@ app.post(
 
 
 
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.json({ limit: '20mb' }));
 app.use(express.json());
-app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
+app.use(bodyParser.urlencoded({ limit: '20mb', extended: true }));
 app.use(express.urlencoded({ extended: true }));
 
 app.use(cors());
