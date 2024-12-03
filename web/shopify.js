@@ -41,8 +41,8 @@ const shopify = shopifyApp({
   },
   // This should be replaced with your preferred storage strategy
   sessionStorage: new MySQLSessionStorage( 
-    `mysql://root:root123@localhost/testingsessionstoragedb`
-  ),
+    `mysql://root:itgeeks12345@localhost/testingsessionstoragedb`
+  ), 
 
 
   // sessionStorage:new MySQLSessionStorage({})

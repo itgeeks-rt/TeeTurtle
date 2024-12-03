@@ -1,9 +1,11 @@
 .template-action__button .Polaris-ButtonGroup {
     justify-content: flex-end;
 }
+.template-action__button .Polaris-Button__Spinner+.Polaris-Text--root {
+    opacity: 0;
+}
 .table-loading__spinner {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    display: none;
 }

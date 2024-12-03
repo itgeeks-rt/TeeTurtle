@@ -15,7 +15,7 @@ import {
   Spinner,
   FormLayout,
   DropZone,
-  BlockStack,
+  BlockStack
 } from "@shopify/polaris";
 import '../assets/styles.css';
 import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
@@ -24,12 +24,15 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteIcon } from '@shopify/polaris-icons';
 import { NoteIcon } from '@shopify/polaris-icons';
+import { json } from "body-parser";
 
 export default function Template() {
   const { t } = useTranslation();
   const listLimit = 7;
   const shopify = useAppBridge();
   const baseUrl = variable.Base_Url;
+
+  // State variables for managing images, pagination, form inputs, and loading states
   const [imageName, setImageName] = useState("");
   const [fetchImages, setFetchImages] = useState([]);
   const [searchValue, setSearchValue] = useState("");
@@ -37,13 +40,21 @@ export default function Template() {
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selected, setSelected] = useState('Select');
+  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
+  const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const [buttonRemoveLoading, setButtonRemoveLoading] = useState(false);
+  const [loadingSpinner, setLoadingSpinner] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadedFileBase64, setUploadedFileBase64] = useState("");
   const [requestBody, setRequestBody] = useState({
     page: 1, 
     limit: listLimit,
   });
-  const [selected, setSelected] = useState('Select');
-  const [isButtonEnabled, setIsButtonEnabled] = useState(false);
-  const [isButtonLoading, setIsButtonLoading] = useState(false);
+  
+  const validImageTypes = ["image/jpeg", "image/png"];
+  let myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/json");
 
   const category = [
     { label: 'Select', value: 'Select', disabled: true },
@@ -59,10 +70,9 @@ export default function Template() {
   ];
 
 
-  /* Fetch template images from the database using AJAX. */
+   /* Fetch template images from the server using AJAX */
   useEffect(() => {
-    let myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
+    setLoadingSpinner(true);
     fetch(`${baseUrl}/external/image/imagesList?shop=itgeeks-test.myshopify.com`, {
       method: "POST",
       body: JSON.stringify(requestBody),
@@ -74,13 +84,17 @@ export default function Template() {
         const items = data?.result.rows || [];
         const itemPagination = data?.result.pagination || [];
         setPagination(itemPagination);
-        setFetchImages(items);
+        setFetchImages(items); 
+        setLoadingSpinner(false);
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
+        console.error(err)
+      });
   }, [requestBody]);
 
 
-  /* Pagination is functioning based on template images. */
+  /* Update pagination status based on the response */
   useEffect(() => {
     if (pagination && pagination.count > pagination.per_page) {
       const totalPages = Math.ceil(pagination.count / pagination.per_page);
@@ -93,26 +107,123 @@ export default function Template() {
     }
   }, [pagination]);
 
-  /* Filter images using the search bar and fetch template images from the database via AJAX. */
+  /* Handle search input change and fetch updated list of images */
   const handleSearchChange = (value) => {
     setSearchValue(value);
     const updatedRequestBody = {
       page: 1,
       limit: listLimit,
-      ...(value && value.length >= 3 ? { searchQuery: value } : {}),
+      ...(value && value.length >= 0 ? { searchQuery: value } : {}),
     };
     setRequestBody(updatedRequestBody);
   };
 
-  const emptyStateMarkup = (
-    <EmptySearchResult
-      title={'No Results Found'}
-      description={'Try changing the filters or search term'}
-      withIllustration
-    />
-  );
+  /* Image upload form validation */
+  const validateForm = (name, category, uploadFile) => {
+    setIsButtonEnabled(name && category && category !== 'Select' && uploadFile);
+  };
 
-  /* Upload template images using modal validation and post the data to the server. */
+  /* Convert file to Base64 for upload */
+  const convertToBase64 = (uploadFile) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedFileBase64(reader.result.split(',')[1]); // Save base64 encoded string
+    };
+    reader.readAsDataURL(uploadFile);
+  };
+
+  /* Handle file drop event */
+  const handleDropZoneDrop = useCallback((_dropFiles, acceptedFiles, _rejectedFiles) => {
+    const file = acceptedFiles[0];
+    const maxSize = 5 * 1024 * 1024;
+    if (file && validImageTypes.includes(file.type) && file.size <= maxSize) {
+      setUploadFile(file);
+      validateForm(imageName, selected, file);
+      convertToBase64(file);
+    } else {
+      setUploadFile(null);
+      setUploadedFileBase64("");
+      validateForm(imageName, selected, null);
+      shopify.toast.show('Maximum file size is 5MB', { isError: true });
+    }
+  }, [imageName, selected]);
+
+
+  /* Handle image upload submission */
+  const handleSubmit = () => {
+    setIsButtonLoading(true);
+    const requesUploadBody = {
+      imageName: imageName,
+      category: selected,  
+      fileBase64: uploadedFileBase64
+    };
+
+    fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
+      method: "POST",
+      body: JSON.stringify(requesUploadBody),
+      headers: myHeaders,
+      redirect: 'follow' 
+    }) 
+    .then((res) => res.json())
+    .then((data) => {
+      setIsButtonLoading(false);  
+      if(data && data.status){  
+        shopify.modal.hide('upload-image');
+        shopify.toast.show('Image template created successfully.', { duration: 5000});
+        setRequestBody({ page: 1, limit: listLimit });
+        resetForm();
+      }else if (data && data.message){
+        shopify.toast.show(data.message, {isError: true,}); 
+      }
+    })
+    .catch((err) => {
+      setIsButtonEnabled(false);
+      console.error(err)
+      shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
+    });
+  };
+
+
+  /* Reset form state after successful upload */
+  const resetForm = () => {
+    setImageName("");
+    setSelected("Select");
+    setUploadFile(null);
+    setUploadedFileBase64("");
+    setIsButtonEnabled(false);
+  };
+
+
+  /* Handle image deletion */
+  const removeTemplate = (imageId) => {
+    setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: true }));
+    const requestDeleteBody = {
+      imageId: imageId
+    };
+    fetch(`${baseUrl}/external/image/deleteImage?shop=itgeeks-test.myshopify.com`, {
+      method: "DELETE",
+      body: JSON.stringify(requestDeleteBody),
+      headers: myHeaders,
+      redirect: 'follow' 
+    })
+    .then((res) => res.json())
+    .then((data) => { 
+      setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: false }));
+      if(data && data.status){
+        shopify.toast.show('Image template removed successfully.', {
+          duration: 5000,
+        });
+        setRequestBody({ page: currentPage, limit: listLimit });
+      }else if (data && data.message){
+        shopify.toast.show(data.message, {isError: true});
+      }
+    })
+    .catch((err) => {
+      shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
+      console.error(err)
+    });
+  };
+
   const imageNameInput = (value) => {
     setImageName(value);
     validateForm(value, selected, uploadedFile);
@@ -121,85 +232,28 @@ export default function Template() {
     setSelected(value);
     validateForm(imageName, value, uploadedFile);
   };
-  const validateForm = (name, category, file) => {
-    if (name && category && category !== 'Select' && file) {
-      setIsButtonEnabled(true);
-    } else {
-      setIsButtonEnabled(false);
-    }
-  };
-  const handleSubmit = () => {
-    setIsButtonLoading(true);
-    const requestBody = {
-      imageName: imageName,
-      category: selected,  
-      fileBase64: uploadedFileBase64,
-    };
 
-    let myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
-      method: "POST",
-      body: JSON.stringify(requestBody),
-      headers: myHeaders,
-      redirect: 'follow'
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        setIsButtonLoading(false);  
-        console.log(data)
-      })
-      .catch((err) => console.error(err));
-  };
-
-  const [file, setFile] = useState(null);
-  const [uploadedFileBase64, setUploadedFileBase64] = useState("");
-
-  const handleDropZoneDrop = useCallback((_dropFiles, acceptedFiles, _rejectedFiles) => {
-    const file = acceptedFiles[0];
-
-    if (file && validImageTypes.includes(file.type)) {
-      setFile(file);
-      validateForm(imageName, selected, file);
-      convertToBase64(file);
-    } else {
-      setFile(null);
-      setUploadedFileBase64("");
-      validateForm(imageName, selected, null);
-    }
-  }, [imageName, selected]);
-
-  const validImageTypes = ["image/jpeg", "image/png"];
-
-  const convertToBase64 = (file) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setUploadedFileBase64(reader.result.split(',')[1]); // Save base64 encoded string
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const fileUpload = !file && <DropZone.FileUpload actionHint="Accepts only .jpg and .png" />;
-  const uploadedFile = file && (
+  const fileUpload = !uploadFile && <DropZone.FileUpload actionHint="Accepts only .jpg and .png" />;
+  const uploadedFile = uploadFile && (
     <Box as="div" padding={{ xs: '400', sm: '400' }}>
       <BlockStack gap="150" inlineAlign="center" align="center">
         <Thumbnail
           size="small"
-          alt={file.name}
+          alt={uploadFile.name}
           source={
-            validImageTypes.includes(file.type)
-              ? window.URL.createObjectURL(file)
+            validImageTypes.includes(uploadFile.type)
+              ? window.URL.createObjectURL(uploadFile)
               : NoteIcon
           }
         />
         <Text variant="bodySm" as="p">
-          {file.name}{' '}
+          {uploadFile.name}{' '}
         </Text>
         <Button
           variant="plain"
           tone="critical"
           onClick={() => {
-            setFile(null);
+            setUploadFile(null);
             validateForm(imageName, selected, null);
           }}
         >
@@ -210,6 +264,14 @@ export default function Template() {
   );
 
 
+  const emptyStateMarkup = (
+    <EmptySearchResult
+      title={'No Results Found'}
+      description={'Try changing the filters or search term'}
+      withIllustration
+    />
+  );
+
   const resourceName = {
     singular: 'image',
     plural: 'images',
@@ -217,12 +279,12 @@ export default function Template() {
 
   const rowMarkup = fetchImages.map(
     (
-      { id, imageURL, imageName, createdAt, category },
+      { id, imageURL, imageName, createdAt, category, imageId },
       index,
     ) => (
       <IndexTable.Row
         id={id}
-        key={id}
+        key={imageId}
         position={index}
       >
         <IndexTable.Cell>
@@ -240,15 +302,15 @@ export default function Template() {
         </IndexTable.Cell>
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim">Use Template</Button>
-            <Button size="slim">
-              <Icon source={DeleteIcon} tone="critical" />
-            </Button>
+            <Button size="slim" onClick={() => shopify.modal.show('customize-image')}>Use Template</Button>
+            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId)} loading={buttonRemoveLoading[imageId]}>
+                <Icon source={DeleteIcon} tone="critical" />
+            </Button>   
           </ButtonGroup>
         </IndexTable.Cell>
       </IndexTable.Row>
     ),
-  );
+  ); 
 
   return (
     <Page
@@ -256,6 +318,13 @@ export default function Template() {
       primaryAction={{ content: "Create new template", onAction: () => shopify.modal.show('upload-image') }}
       
     >
+      <Modal id="customize-image" variant="max">
+        <div></div>
+        <TitleBar>
+          <button variant="primary">Primary action</button>
+          <button>Secondary action</button>
+        </TitleBar>
+      </Modal> 
       <Modal id="upload-image">
         <Box padding={{ xs: '400', sm: '400' }}>
           <FormLayout>
@@ -280,7 +349,6 @@ export default function Template() {
             </DropZone>
           </FormLayout>
         </Box>
-        <TitleBar title="Create template and upload new image"></TitleBar>
         <Box as="div" padding={{ xs: '400', sm: '400' }} borderBlockStartWidth="0165" borderColor="border-brand">
           <BlockStack as="div" inlineAlign="end">
             <Button variant="primary" 
@@ -291,8 +359,9 @@ export default function Template() {
             </Button>
           </BlockStack> 
         </Box>
-      </Modal>
-      <Card padding={{ xs: '0', sm: '0' }}>
+        <TitleBar title="Create template and upload a new image"></TitleBar>
+      </Modal> 
+      <Card padding={{ xs: '0', sm: '0' }}> 
         <Box padding={{ xs: '400', sm: '400' }}>
           <TextField
             value={searchValue}
@@ -319,19 +388,17 @@ export default function Template() {
             pagination={{
               hasPrevious: hasPrevious,
               hasNext: hasNext,
-              onNext: () => {
-                setRequestBody({ page: currentPage + 1, limit: listLimit });
-              },
-              onPrevious: () => {
-                setRequestBody({ page: currentPage - 1, limit: listLimit });
-              },
+              onNext: () => setRequestBody({ ...requestBody, page: currentPage + 1 }),
+              onPrevious: () => setRequestBody({ ...requestBody, page: currentPage - 1 }),
             }}
           >
             {rowMarkup}
           </IndexTable>
-          <Box as="span" className="table-loading__spinner" position="absolute">
-            <Spinner accessibilityLabel="Loading Spinner" size="large" />
-          </Box>
+          {loadingSpinner && (
+            <Box as="span" className="table-loading__spinner" position="absolute">
+              <Spinner accessibilityLabel="Loading Spinner" size="large" />
+            </Box>
+          )}
         </Box>
       </Card>
     </Page>
