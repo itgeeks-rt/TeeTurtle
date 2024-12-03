@@ -12,10 +12,18 @@ import { TitleBar } from "@shopify/app-bridge-react";
 import { useTranslation, Trans } from "react-i18next";
 import { trophyImage } from "../assets";
 import { ProductsCard } from "../components";
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    navigate("/template");
+  }, [navigate]);
+
+  return null; 
   const { t } = useTranslation();
-  return (
+  return ( 
     <Page narrowWidth>
       <TitleBar title={t("HomePage.title")} />
       <Layout>

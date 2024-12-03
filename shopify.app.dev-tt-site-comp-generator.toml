@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
-application_url = "https://finest-wise-ds-gi.trycloudflare.com"
+application_url = "https://senior-architecture-standing-exceed.trycloudflare.com"
 embedded = true
 name = "Dev-TT-Site-Comp-Generator"
 handle = "dev-tt-site-comp-generator"
@@ -15,9 +15,9 @@ scopes = "write_products,write_files,write_themes"
 
 [auth]
 redirect_urls = [
-  "https://finest-wise-ds-gi.trycloudflare.com/auth/callback",
-  "https://finest-wise-ds-gi.trycloudflare.com/auth/shopify/callback",
-  "https://finest-wise-ds-gi.trycloudflare.com/api/auth/callback"
+  "https://senior-architecture-standing-exceed.trycloudflare.com/auth/callback",
+  "https://senior-architecture-standing-exceed.trycloudflare.com/auth/shopify/callback",
+  "https://senior-architecture-standing-exceed.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
