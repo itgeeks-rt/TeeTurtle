@@ -8,11 +8,17 @@ import { Op } from "sequelize";
 const product = db.productModel
 
 
+
 export const uploadImage = async (req, res, session) => {
 
   const imageName = req.body.imageName
   const category = req.body.category
-  const fileBase64=req.body.fileBase64
+  const fileBase64 = req.body.fileBase64
+
+  console.log(req.body);
+
+
+  console.log("file is --",req.file);
 
 
   const staged_Uploads_Create_Mutation = `
@@ -68,10 +74,18 @@ export const uploadImage = async (req, res, session) => {
 
   let bufferObj = Buffer.from(fileBase64, "base64");
 
+  // let bufferObj = fs.createReadStream(req.file.path);
+
   form.append("file",bufferObj)
 
   const uploadRespose = await axios.post(URL, form, {
-    headers: form.getHeaders(),
+    headers: {
+      ...form.getHeaders(),
+    
+      maxBodyLength: Infinity,
+       maxContentLength: Infinity,
+      timeout: 60000,
+    },
   });
 
 
@@ -82,7 +96,7 @@ export const uploadImage = async (req, res, session) => {
   if (!url) {
     return {
       status: false,
-      error:"Can't get URL"
+      error: "Can't get URL"
     }
   }
 
@@ -128,37 +142,45 @@ export const uploadImage = async (req, res, session) => {
 
   console.log(fileResponse.data.fileCreate.files[0]);
 
-  const fileStatus=fileResponse?.data?.fileCreate?.files[0]?.fileStatus;
+  const fileStatus = fileResponse?.data?.fileCreate?.files[0]?.fileStatus;
 
-  if(fileStatus==="UPLOADED"){
+  if (fileStatus === "UPLOADED") {
 
-  const imageId = fileResponse.data.fileCreate.files[0].id
-  const updatedAt = fileResponse.data.fileCreate.files[0].updatedAt
-  const createdAt = fileResponse.data.fileCreate.files[0].createdAt
+    const imageId = fileResponse.data.fileCreate.files[0].id
+    const updatedAt = fileResponse.data.fileCreate.files[0].updatedAt
+    const createdAt = fileResponse.data.fileCreate.files[0].createdAt
 
 
- 
-  const data = await getImageStatus(req, res, session, imageId);
-  console.log("data -is",data);
 
-  
-  const  result = product.create({
-         productId: 9,
-         imageId: imageId,
-         imageURL:data.node?.image?.url ,
-         updatedAt: updatedAt,
-         createdAt: createdAt,
-         category:category ,
-         imageName:imageName})
-  return result
- }
- else{
-  return {
-    status:false,
-    message:"Can not upload Image"
+    const data = await getImageStatus(req, res, session, imageId);
+
+    if (!data) {
+      return {
+        status: false,
+      }
+    }
+
+    console.log("data -is", data);
+
+
+    const result = product.create({
+      productId: 9,
+      imageId: imageId,
+      imageURL: data.node?.image?.url,
+      updatedAt: updatedAt,
+      createdAt: createdAt,
+      category: category,
+      imageName: imageName
+    })
+
+    return result
   }
- }
- 
+  else {
+    return {
+      status: false
+    }
+  }
+
 
 };
 
@@ -176,6 +198,11 @@ const getImageStatus = async (req, res, session, imageId) => {
           originalSource {
             url
           }
+            fileErrors {
+        code
+        details
+        message
+      }
         }
       }
     }`;
@@ -183,16 +210,23 @@ const getImageStatus = async (req, res, session, imageId) => {
     const client = new shopify.api.clients.Graphql({ session });
     const response = await client.request(get_image_query);
 
+    console.log(response.data);
+
     const status = response.data?.node?.status;
     console.log("Image status---", status);
 
-    if (status !== "READY"  || status==="PROCESSING"  ) {
+    if (status !== "READY" || status === "PROCESSING") {
       console.log("Status is  not READY trying again ");
-      await new Promise((resolve) => setTimeout(resolve, 500)); 
-      return await getStatus(); 
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return await getStatus();
+    }
+    else if (status === "FAILED") {
+
+      return false
+
     }
 
-    return response.data; 
+    return response.data;
   };
   console.time();
   await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -202,52 +236,54 @@ const getImageStatus = async (req, res, session, imageId) => {
 
 
 
-export const getImage = async (req,res,session) => {
+// export const getImage = async (req,res,session) => {
 
 
 
-  const imageId = req.body.imageId 
+//   const imageId = req.body.imageId 
 
-  const get_image_query = `query {
-    node(id: "${imageId}") {
-      id
-      ... on MediaImage {
-      status
-      
-        image {
-          url
-        }
-           originalSource {
-          url
-        }
-      }
-    }
-  }
-  `
+//   const get_image_query = `query {
+//     node(id: "${imageId}") {
+//       id
+//       ... on MediaImage {
+//       status
 
-  const client = new shopify.api.clients.Graphql({ session });
+//         image {
+//           url
+//         }
+//            originalSource {
+//           url
+//         }
+//       }
+//     }
+//   }
+//   `
 
-  const response = await client.request(get_image_query);
+//   const client = new shopify.api.clients.Graphql({ session });
 
-  console.log(response.data?.node?.status);
+//   const response = await client.request(get_image_query);
 
-  return response.data
+//   console.log(response.data?.node?.status);
 
-}
+//   return response.data
+
+// }
 
 
 
 
 export const deleteImage = async (req, res, session) => {
 
-
-
-
   const imageId = req.body.imageId
 
   const file_delete_Mutation = `mutation fileDelete($input: [ID!]!) {
   fileDelete(fileIds: $input) {
     deletedFileIds
+     userErrors {
+        code
+        field
+        message
+      }
   }
 }
 `
@@ -259,34 +295,13 @@ export const deleteImage = async (req, res, session) => {
       "input": [
 
         `${imageId}`
-      ] 
+      ]
     }
 
   });
-  console.log("response--",response.data.fileDelete.deletedFileIds);  //if file does it exist response will be null
-
-  if(response==null){
-    return {
-      status:false,
-      message:"Image does not exist"
-    } 
-  }
-  const isDeleted =  response.data.fileDelete.deletedFileIds.length > 0  ?  true  : false
-
-  if(isDeleted){
-
-    const result=product.destroy({ where: { imageId } })
+ 
+    const result = product.destroy({ where: { imageId } })
     return result
-
-  }
-  else{
-    return {
-      status:false,
-      message:"Can not delete image"
-    }
-  }
-
-  
 
 }
 
