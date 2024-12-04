@@ -8,7 +8,6 @@ const router = express.Router();
 router.post("/uploadImage",upload.single("file"),uploadValidation,controllers.uploadImage)
 router.post("/getImage",controllers.getImage)
 router.delete("/deleteImage",controllers.deleteImage)
-router.post("/productImage",controllers.productImage)
 router.post("/imagesList",controllers.getImageList)
 
 export default router

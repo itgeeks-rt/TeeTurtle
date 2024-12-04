@@ -65,25 +65,7 @@ export const deleteImage = async (req, res) => {
    
    
 };
-export const productImage = async (req, res) => {
-    
-    
 
-   try {
-
-    const session=req.currentSession
-
-    const result = await services.productImage(req, res,session);
-    
-    sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_DELETED,result)
-    
-   } catch (error) {
-    console.log("error in upload Image : ",error);
-    sendResponse(res,statusCode.INTERNAL_SERVER_ERROR,false,ErrorMessage.INTERNAL_SERVER_ERROR,error)
-   }
-   
-   
-};
 export const getImageList = async (req, res) => {
    
    try {

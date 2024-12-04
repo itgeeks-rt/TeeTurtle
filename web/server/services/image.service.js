@@ -305,59 +305,6 @@ export const deleteImage = async (req, res, session) => {
 
 }
 
-export const productImage = async (req, res, session) => {
-
-
-
-
-  // const imageId=req.body.imageId
-  const originalSource = req.body.originalSource
-  const productId = req.body.productId
-
-
-
-  const product_create_media = `mutation productCreateMedia($media: [CreateMediaInput!]!, $productId: ID!) {
-  productCreateMedia(media: $media, productId: $productId) {
-    media {
-      alt 
-      mediaContentType
-      status
-    }
-    mediaUserErrors {
-      field
-      message
-    }
-    product {
-      id
-      title
-    }
-  }
-}
-`
-
-  const client = new shopify.api.clients.Graphql({ session });
-
-  const response = await client.request(product_create_media, {
-    variables: {
-      "media": [
-
-        {
-          "alt": "Image",
-          "mediaContentType": "IMAGE",
-          "originalSource": originalSource
-        }
-      ],
-      "productId": productId
-    }
-
-
-
-  });
-
-  return response.data
-
-}
-
 
 
 export const getImageList = async (req, res, session) => {

@@ -1,18 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
-<<<<<<< HEAD
-<<<<<<< HEAD
-application_url = "https://publications-airplane-jonathan-curtis.trycloudflare.com"
-=======
-application_url = "https://senior-architecture-standing-exceed.trycloudflare.com"
->>>>>>> 6b8af32fd1f2535692b032b52378c86283cf4435
-=======
-application_url = "https://senior-architecture-standing-exceed.trycloudflare.com"
-=======
-application_url = "https://publications-airplane-jonathan-curtis.trycloudflare.com"
->>>>>>> 23dc150271e959b0ebea26a912f7d6fbb8ba0735
->>>>>>> 85815818041c23385b5be9d3cf625deacc0bc855
+application_url = "https://rim-votes-bubble-premier.trycloudflare.com"
 embedded = true
 name = "Dev-TT-Site-Comp-Generator"
 handle = "dev-tt-site-comp-generator"
@@ -26,26 +15,9 @@ scopes = "write_products,write_files,write_themes"
 
 [auth]
 redirect_urls = [
-<<<<<<< HEAD
-<<<<<<< HEAD
-  "https://publications-airplane-jonathan-curtis.trycloudflare.com/auth/callback",
-  "https://publications-airplane-jonathan-curtis.trycloudflare.com/auth/shopify/callback",
-  "https://publications-airplane-jonathan-curtis.trycloudflare.com/api/auth/callback"
-=======
-  "https://senior-architecture-standing-exceed.trycloudflare.com/auth/callback",
-  "https://senior-architecture-standing-exceed.trycloudflare.com/auth/shopify/callback",
-  "https://senior-architecture-standing-exceed.trycloudflare.com/api/auth/callback"
->>>>>>> 6b8af32fd1f2535692b032b52378c86283cf4435
-=======
-  "https://senior-architecture-standing-exceed.trycloudflare.com/auth/callback",
-  "https://senior-architecture-standing-exceed.trycloudflare.com/auth/shopify/callback",
-  "https://senior-architecture-standing-exceed.trycloudflare.com/api/auth/callback"
-=======
-  "https://publications-airplane-jonathan-curtis.trycloudflare.com/auth/callback",
-  "https://publications-airplane-jonathan-curtis.trycloudflare.com/auth/shopify/callback",
-  "https://publications-airplane-jonathan-curtis.trycloudflare.com/api/auth/callback"
->>>>>>> 23dc150271e959b0ebea26a912f7d6fbb8ba0735
->>>>>>> 85815818041c23385b5be9d3cf625deacc0bc855
+  "https://rim-votes-bubble-premier.trycloudflare.com/auth/callback",
+  "https://rim-votes-bubble-premier.trycloudflare.com/auth/shopify/callback",
+  "https://rim-votes-bubble-premier.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
