@@ -13,7 +13,13 @@ export const uploadImage = async (req, res) => {
     const session=req.currentSession
 
     const result = await services.uploadImage(req, res,session);
+
+    if(!result){
+    sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.BAD_REQUEST)
+    }
+    else{
     sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_CREATED,result)
+    }
     
    } catch (error) {
     console.log("error in upload Image : ",error);

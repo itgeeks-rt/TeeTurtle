@@ -5,7 +5,7 @@ const router = express.Router();
 
 
 router.post("/productList",controllers.getProductList)
-router.post("/productImage",controllers.productImage)
+router.post("/productImage",controllers.uploadProductImage)
 
 
 export default router

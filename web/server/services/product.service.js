@@ -41,23 +41,15 @@ export const getProductList = async (req, res, session) => {
 
   const response = await client.request(QUERY);
 
-
-
-
-
-
   return response
 };
 
-export const productImage = async (req, res, session) => {
-
-
+export const uploadProductImage = async (req, res, session) => {
 
 
   // const imageId=req.body.imageId
   const originalSource = req.body.originalSource
-  const productId = req.body.productId
-
+  const productId = [1,2,3,4,5]
 
 
   const product_create_media = `mutation productCreateMedia($media: [CreateMediaInput!]!, $productId: ID!) {
@@ -81,24 +73,80 @@ export const productImage = async (req, res, session) => {
 
   const client = new shopify.api.clients.Graphql({ session });
 
-  const response = await client.request(product_create_media, {
-    variables: {
-      "media": [
 
-        {
-          "alt": "Image",
-          "mediaContentType": "IMAGE",
-          "originalSource": originalSource
-        }
-      ],
-      "productId": productId
-    }
+ const allPromises= productId.forEach(async (id) => {
+  let response =  await client.request(product_create_media, {
+      variables: {
+        "media": [
+          {
+            "alt": "Image",
+            "mediaContentType": "IMAGE",
+            "originalSource": originalSource
+          }
+        ],
+        "productId": id
+      }
+    });
 
 
-
+    return response.data
   });
 
-  return response.data
+
+const result = await Promise.all(allPromises);
+  return result
+  
 
 }
+
+
+// export const uploadProductImage = async (req, res, session) => {
+
+
+//   // const imageId=req.body.imageId
+//   const originalSource = req.body.originalSource
+//   const productId = req.body.productId
+
+
+//   const product_create_media = `mutation productCreateMedia($media: [CreateMediaInput!]!, $productId: ID!) {
+//   productCreateMedia(media: $media, productId: $productId) {
+//     media {
+//       alt 
+//       mediaContentType
+//       status
+//     }
+//     mediaUserErrors {
+//       field
+//       message
+//     }
+//     product {
+//       id
+//       title
+//     }
+//   }
+// }
+// `
+
+//   const client = new shopify.api.clients.Graphql({ session });
+
+//   const response = await client.request(product_create_media, {
+//     variables: {
+//       "media": [
+
+//         {
+//           "alt": "Image",
+//           "mediaContentType": "IMAGE",
+//           "originalSource": originalSource
+//         }
+//       ],
+//       "productId": productId
+//     }
+
+
+
+//   });
+
+//   return response.data
+
+// }
 

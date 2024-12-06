@@ -17,10 +17,6 @@ export const uploadImage = async (req, res, session) => {
 
   console.log(req.body);
 
-
-  console.log("file is --",req.file);
-
-
   const staged_Uploads_Create_Mutation = `
   mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
   stagedUploadsCreate(input: $input) {
@@ -58,9 +54,7 @@ export const uploadImage = async (req, res, session) => {
   const target = response.data?.stagedUploadsCreate?.stagedTargets[0]
 
   if (!target) {
-    return {
-      status: false
-    }
+   return false
   }
 
   const parameters = target.parameters
@@ -94,10 +88,8 @@ export const uploadImage = async (req, res, session) => {
   // console.log("url------------", url);
 
   if (!url) {
-    return {
-      status: false,
-      error: "Can't get URL"
-    }
+    return  false
+     
   }
 
 
@@ -155,9 +147,8 @@ export const uploadImage = async (req, res, session) => {
     const data = await getImageStatus(req, res, session, imageId);
 
     if (!data) {
-      return {
-        status: false,
-      }
+      return false;
+      
     }
 
     console.log("data -is", data);
@@ -176,9 +167,7 @@ export const uploadImage = async (req, res, session) => {
     return result
   }
   else {
-    return {
-      status: false
-    }
+    return false
   }
 
 
@@ -215,16 +204,18 @@ const getImageStatus = async (req, res, session, imageId) => {
     const status = response.data?.node?.status;
     console.log("Image status---", status);
 
-    if (status !== "READY" || status === "PROCESSING") {
-      console.log("Status is  not READY trying again ");
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return await getStatus();
-    }
-    else if (status === "FAILED") {
+    if (status === "FAILED") {
 
       return false
 
     }
+
+    else if (status !== "READY" || status === "PROCESSING") {
+      console.log("Status is  not READY trying again ");
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      return await getStatus();
+    }
+    
 
     return response.data;
   };
