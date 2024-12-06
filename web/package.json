@@ -18,6 +18,8 @@
     "@shopify/shopify-app-session-storage-sqlite": "^4.0.8",
     "compression": "^1.7.4",
     "cross-env": "^7.0.3",
+    "fabric": "^6.5.3",
+    "html2canvas": "^1.4.1",
     "serve-static": "^1.14.1"
   },
   "devDependencies": {

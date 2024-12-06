@@ -9,3 +9,22 @@
     left: 50%;
     transform: translate(-50%, -50%);
 }
+.personalization-image__box {
+    position: relative;
+    height: calc(100vh - 5rem);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-image: radial-gradient(rgb(148 148 148 / 76%) 14.4%, transparent 14.4%);
+    background-position: 0 0;
+    background-size: 10px 10px;
+    background-color: rgb(255 255 255 / 5%);
+    padding: 20px;
+}
+.personalization-image__media {
+    position: relative;
+    height: 100%;
+    display: block;
+    width: auto;
+}

@@ -24,7 +24,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteIcon } from '@shopify/polaris-icons';
 import { NoteIcon } from '@shopify/polaris-icons';
-import { json } from "body-parser";
+import ImageCustomization from '../components/ImageCustomization'
 
 export default function Template() {
   const { t } = useTranslation();
@@ -51,6 +51,7 @@ export default function Template() {
     page: 1, 
     limit: listLimit,
   });
+  const [customizeImageUrl, setCustomizeImageUrl] = useState(null);
   
   const validImageTypes = ["image/jpeg", "image/png"];
   let myHeaders = new Headers();
@@ -63,7 +64,7 @@ export default function Template() {
     { label: 'Long Sleeve', value: 'Long Sleeve' },
     { label: 'Crew Neck', value: 'Crew Neck' },
     { label: 'Hoodie', value: 'Hoodie' },
-    { label: 'Triblend', value: 'Triblend' },
+    { label: 'Triblend', value: 'Triblend' }, 
     { label: 'V-Neck', value: 'V-Neck' },
     { label: 'Tank Top', value: 'Tank Top' },
     { label: 'Mugs', value: 'Mugs' },
@@ -125,7 +126,7 @@ export default function Template() {
 
   /* Convert file to Base64 for upload */
   const convertToBase64 = (uploadFile) => {
-    const reader = new FileReader();
+    const reader = new FileReader(); 
     reader.onloadend = () => {
       setUploadedFileBase64(reader.result.split(',')[1]); // Save base64 encoded string
     };
@@ -250,7 +251,7 @@ export default function Template() {
           {uploadFile.name}{' '}
         </Text>
         <Button
-          variant="plain"
+          variant="plain" 
           tone="critical"
           onClick={() => {
             setUploadFile(null);
@@ -264,6 +265,11 @@ export default function Template() {
   );
 
 
+  const handlerImageCustomizerPopup = (imageURL) => {
+    shopify.modal.show('customize-image');
+    setCustomizeImageUrl(imageURL);
+  };
+
   const emptyStateMarkup = (
     <EmptySearchResult
       title={'No Results Found'}
@@ -271,7 +277,7 @@ export default function Template() {
       withIllustration
     />
   );
-
+ 
   const resourceName = {
     singular: 'image',
     plural: 'images',
@@ -299,10 +305,10 @@ export default function Template() {
           <Text as="span" alignment="end">
             {createdAt}
           </Text>
-        </IndexTable.Cell>
+        </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim" onClick={() => shopify.modal.show('customize-image')}>Use Template</Button>
+            <Button size="slim" onClick={() => handlerImageCustomizerPopup(imageURL)}>Use Template</Button>
             <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId)} loading={buttonRemoveLoading[imageId]}>
                 <Icon source={DeleteIcon} tone="critical" />
             </Button>   
@@ -318,22 +324,16 @@ export default function Template() {
       primaryAction={{ content: "Create new template", onAction: () => shopify.modal.show('upload-image') }}
       
     >
-      <Modal id="customize-image" variant="max">
-        <div></div>
-        <TitleBar>
-          <button variant="primary">Primary action</button>
-          <button>Secondary action</button>
-        </TitleBar>
-      </Modal> 
+      <ImageCustomization imageLink={customizeImageUrl}/>
       <Modal id="upload-image">
-        <Box padding={{ xs: '400', sm: '400' }}>
+        <Box padding={{ xs: '400', sm: '400' }}> 
           <FormLayout>
             <TextField
               label="Image Name (Maximum of 15 character)"
               maxLength="15"
               value={imageName}
               onChange={imageNameInput}
-              placeholder="Image Name"
+              placeholder="Image Name" 
               clearButton
               onClearButtonClick={() => imageNameInput("")}
             />
@@ -349,7 +349,7 @@ export default function Template() {
             </DropZone>
           </FormLayout>
         </Box>
-        <Box as="div" padding={{ xs: '400', sm: '400' }} borderBlockStartWidth="0165" borderColor="border-brand">
+        <Box padding={{ xs: '400', sm: '400' }} borderBlockStartWidth="0165" borderColor="border-brand">
           <BlockStack as="div" inlineAlign="end">
             <Button variant="primary" 
               disabled={!isButtonEnabled} 
