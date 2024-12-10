@@ -1,9 +1,6 @@
-const  productModel = (sequelize, Sequelize) => {
-    const product_details = sequelize.define("product_details", {
+const  image_template = (sequelize, Sequelize) => {
+    const image_template = sequelize.define("image_template", {
    
-    productId: {
-    type: Sequelize.STRING
-    },
     imageName: {
     type: Sequelize.STRING  
     },
@@ -23,7 +20,7 @@ const  productModel = (sequelize, Sequelize) => {
     type: Sequelize.DATE
     }
     });
-    return product_details;
+    return image_template;
     };
 
-    export default productModel
+    export default image_template

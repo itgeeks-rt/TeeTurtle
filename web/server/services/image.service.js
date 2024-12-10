@@ -5,15 +5,15 @@ import fs from "fs"
 import * as cheerio from 'cheerio';
 import db from "../models/index.js";
 import { Op } from "sequelize";
-const product = db.productModel
-
-
+const image_template = db.image_template
+const personalized_image = db.personalized_image
 
 export const uploadImage = async (req, res, session) => {
 
   const imageName = req.body.imageName
   const category = req.body.category
   const fileBase64 = req.body.fileBase64
+  const isPersonalized = req.body.personalized
 
   console.log(req.body);
 
@@ -32,7 +32,6 @@ export const uploadImage = async (req, res, session) => {
 }
 `;
 
-
   const client = new shopify.api.clients.Graphql({ session });
 
   const response = await client.request(staged_Uploads_Create_Mutation, {
@@ -49,17 +48,14 @@ export const uploadImage = async (req, res, session) => {
     }
   });
 
-
-
   const target = response.data?.stagedUploadsCreate?.stagedTargets[0]
 
   if (!target) {
-   return false
+    return false
   }
 
   const parameters = target.parameters
   const URL = target.url
-
   const form = new FormData();
 
   for (let obj of parameters) {
@@ -70,14 +66,14 @@ export const uploadImage = async (req, res, session) => {
 
   // let bufferObj = fs.createReadStream(req.file.path);
 
-  form.append("file",bufferObj)
+  form.append("file", bufferObj)
 
   const uploadRespose = await axios.post(URL, form, {
     headers: {
       ...form.getHeaders(),
-    
+
       maxBodyLength: Infinity,
-       maxContentLength: Infinity,
+      maxContentLength: Infinity,
       timeout: 60000,
     },
   });
@@ -85,13 +81,10 @@ export const uploadImage = async (req, res, session) => {
 
   const $ = cheerio.load(uploadRespose.data);
   const url = $("location").text();
-  // console.log("url------------", url);
 
   if (!url) {
-    return  false
-     
+    return false
   }
-
 
   const file_Create_Mutation = `mutation fileCreate($files: [FileCreateInput!]!) {
     fileCreate(files: $files) {
@@ -127,10 +120,7 @@ export const uploadImage = async (req, res, session) => {
         }
       ]
     }
-
   });
-
-
 
   console.log(fileResponse.data.fileCreate.files[0]);
 
@@ -141,36 +131,46 @@ export const uploadImage = async (req, res, session) => {
     const imageId = fileResponse.data.fileCreate.files[0].id
     const updatedAt = fileResponse.data.fileCreate.files[0].updatedAt
     const createdAt = fileResponse.data.fileCreate.files[0].createdAt
-
-
-
     const data = await getImageStatus(req, res, session, imageId);
 
     if (!data) {
       return false;
-      
+
     }
 
     console.log("data -is", data);
 
+    if (isPersonalized) {
+      const result = personalized_image.create({
+        imageId: imageId,
+        imageURL: data.node?.image?.url,
+        updatedAt: updatedAt,
+        createdAt: createdAt,
+        category: category,
+        imageName: imageName
+      })
 
-    const result = product.create({
-      productId: 9,
-      imageId: imageId,
-      imageURL: data.node?.image?.url,
-      updatedAt: updatedAt,
-      createdAt: createdAt,
-      category: category,
-      imageName: imageName
-    })
+      return result
 
-    return result
+
+    }
+    else {
+      const result = image_template.create({
+        imageId: imageId,
+        imageURL: data.node?.image?.url,
+        updatedAt: updatedAt,
+        createdAt: createdAt,
+        category: category,
+        imageName: imageName
+      })
+
+      return result
+
+    }
   }
   else {
     return false
   }
-
-
 };
 
 
@@ -215,7 +215,7 @@ const getImageStatus = async (req, res, session, imageId) => {
       await new Promise((resolve) => setTimeout(resolve, 500));
       return await getStatus();
     }
-    
+
 
     return response.data;
   };
@@ -226,46 +226,10 @@ const getImageStatus = async (req, res, session, imageId) => {
 };
 
 
-
-// export const getImage = async (req,res,session) => {
-
-
-
-//   const imageId = req.body.imageId 
-
-//   const get_image_query = `query {
-//     node(id: "${imageId}") {
-//       id
-//       ... on MediaImage {
-//       status
-
-//         image {
-//           url
-//         }
-//            originalSource {
-//           url
-//         }
-//       }
-//     }
-//   }
-//   `
-
-//   const client = new shopify.api.clients.Graphql({ session });
-
-//   const response = await client.request(get_image_query);
-
-//   console.log(response.data?.node?.status);
-
-//   return response.data
-
-// }
-
-
-
-
 export const deleteImage = async (req, res, session) => {
 
   const imageId = req.body.imageId
+  const isPersonalized = req.body.personalized
 
   const file_delete_Mutation = `mutation fileDelete($input: [ID!]!) {
   fileDelete(fileIds: $input) {
@@ -290,9 +254,15 @@ export const deleteImage = async (req, res, session) => {
     }
 
   });
- 
-    const result = product.destroy({ where: { imageId } })
-    return result
+
+  if(isPersonalized){
+    const result = personalized_image.destroy({ where: { imageId } })
+  return result
+  }
+  else{
+    const result = image_template.destroy({ where: { imageId } })
+  return result
+  }
 
 }
 
@@ -300,6 +270,7 @@ export const deleteImage = async (req, res, session) => {
 
 export const getImageList = async (req, res, session) => {
   const { shop } = req.query;
+  const isPersonalized=req.body.personalized
   console.log("getImageList--API---shop--", shop);
   const page = parseInt(req.body.page) || 1
   const limit = parseInt(req.body.limit) || 5
@@ -308,7 +279,8 @@ export const getImageList = async (req, res, session) => {
 
   const searchQuery = req.body?.searchQuery || ""
 
-  const result = await product.findAndCountAll({
+ if(isPersonalized){
+  const result = await personalized_image.findAndCountAll({
     offset: offset,
     limit: limit,
     where: {
@@ -332,6 +304,33 @@ export const getImageList = async (req, res, session) => {
   delete result.count;
 
   return result
+ }
+ else{
+  const result = await image_template.findAndCountAll({
+    offset: offset,
+    limit: limit,
+    where: {
+      [Op.or]: [
+        { category: { [Op.like]: '%' + searchQuery + '%' } },
+        { imageName: { [Op.like]: '%' + searchQuery + '%' } }
+      ]
+    },
+    order: [['updatedAt', 'DESC']],
+
+
+  });
+
+  const pagination = {
+    current_page: page,
+    per_page: limit,
+    count: result.count
+  }
+
+  result.pagination = pagination
+  delete result.count;
+
+  return result
+ }
 
 }
 

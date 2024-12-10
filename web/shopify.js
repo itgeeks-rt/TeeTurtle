@@ -5,6 +5,8 @@ import { restResources } from "@shopify/shopify-api/rest/admin/2024-10";
 
 
 import {MySQLSessionStorage} from '@shopify/shopify-app-session-storage-mysql';
+import dotenv from "dotenv"
+dotenv.config()
 
 
 
@@ -20,6 +22,7 @@ const billingConfig = {
     interval: BillingInterval.OneTime,
   },
 };
+
 
 const shopify = shopifyApp({
   api: {
@@ -41,7 +44,7 @@ const shopify = shopifyApp({
   },
   // This should be replaced with your preferred storage strategy
   sessionStorage: new MySQLSessionStorage( 
-    `mysql://root:itgeeks12345@localhost/testingsessionstoragedb`
+  `mysql://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@localhost/${process.env.DB_NAME}`
   ), 
 
 

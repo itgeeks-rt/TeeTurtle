@@ -35,7 +35,7 @@ export const getProductList = async (req, res, session) => {
 } 
 `;
 
-  console.log(QUERY);
+  
 
   const client = new shopify.api.clients.Graphql({ session });
 
@@ -74,29 +74,23 @@ export const uploadProductImage = async (req, res, session) => {
   const client = new shopify.api.clients.Graphql({ session });
 
 
- const allPromises= productId.forEach(async (id) => {
-  let response =  await client.request(product_create_media, {
-      variables: {
-        "media": [
-          {
-            "alt": "Image",
-            "mediaContentType": "IMAGE",
-            "originalSource": originalSource
-          }
-        ],
-        "productId": id
-      }
-    });
+ productId.forEach(async (id) => {
 
+  response = await client.request(product_create_media, {
+    variables: {
+      "media": [
+        {
+          "alt": "Image",
+          "mediaContentType": "IMAGE",
+          "originalSource": originalSource
+        }
+      ],
+      "productId": id
+    }
+ })
+ 
 
-    return response.data
-  });
-
-
-const result = await Promise.all(allPromises);
-  return result
-  
-
+})
 }
 
 

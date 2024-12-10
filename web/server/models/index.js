@@ -1,6 +1,7 @@
 // import dbConfig from "../config/db.config";
 import dbConfig from "../config/db.config.js";
-import productModel  from "./product.model.js";
+import image_template  from "./image_template.model.js";
+import personalized_image  from "./personalized_image.model.js";
 
 import Sequelize from "sequelize"
 
@@ -23,7 +24,8 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-db.productModel=productModel(sequelize,Sequelize)
+db.image_template=image_template(sequelize,Sequelize)
+db.personalized_image=personalized_image(sequelize,Sequelize)
 
   
 export default db;
