@@ -20,7 +20,7 @@ export default function App() {
           <NavMenu>
             <a href="/template" rel="home" />
             <a href="/template">Template</a>
-            <a href="/customization">Customization</a>
+            <a href="/personalization">Personalization</a> 
           </NavMenu>
           <Routes pages={pages} />
         </QueryProvider>

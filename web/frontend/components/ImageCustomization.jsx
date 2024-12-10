@@ -17,11 +17,13 @@ import {
   import { useTranslation } from "react-i18next";
   import { NoteIcon } from '@shopify/polaris-icons'; 
   import html2canvas from 'html2canvas';
+  import { useNavigate } from 'react-router-dom';
 
 
-export default function ImageCustomization({imageLink}) {
+export default function ImageCustomization({imageObject}) {
   const { t } = useTranslation();
 
+  const navigate = useNavigate();
   const baseUrl = variable.Base_Url;
   const shopify = useAppBridge();
   const [uploadLogo, setUploadLogo] = useState(null);
@@ -32,10 +34,11 @@ export default function ImageCustomization({imageLink}) {
   const [logoPositionLeft, setLogoPositionLeft] = useState(50);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+  const [isButtonNavigate, setIsButtonNavigate] = useState(false);
 
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
-
+ 
   const mediaRef = useRef(null);
 
   const handleChangeLogoSize = (value) => {
@@ -55,6 +58,8 @@ export default function ImageCustomization({imageLink}) {
     setLogoPositionLeft(50);
     setUploadLogo(null);
     setLogoBlob(null); 
+    setIsButtonDisabled(true);
+    setIsButtonNavigate(false);
   }
  
   /* Logo upload for customization */
@@ -123,7 +128,7 @@ export default function ImageCustomization({imageLink}) {
         if(type == 'download'){
           const link = document.createElement('a');
           link.href = finalImage;
-          link.download = 'customized.jpg';
+          link.download = 'Personalized.jpg';
           link.click();
           return;
         }
@@ -138,9 +143,10 @@ export default function ImageCustomization({imageLink}) {
 
   const uploadImage = async (base64Image) => {
     const requesUploadBody = {
-      imageName: 'Hoddie',
-      category: 'Long Sleeve',  
-      fileBase64: base64Image
+      imageName: imageObject.imageName,
+      category: imageObject.category,  
+      fileBase64: base64Image,
+      personalized: true
     };
     try {
       const response = await fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
@@ -151,6 +157,7 @@ export default function ImageCustomization({imageLink}) {
       const data = await response.json();
       if(data && data.status){  
         shopify.toast.show('Image uploaded successfully.', { duration: 5000});
+        setIsButtonNavigate(true);
       }else if (data && data.message){
         shopify.toast.show(data.message, {isError: true,}); 
       }
@@ -184,6 +191,7 @@ export default function ImageCustomization({imageLink}) {
             setUploadLogo(null);
             setLogoBlob(null); 
             setIsButtonDisabled(true);
+            setIsButtonNavigate(false);
           }}
         >
           Change
@@ -206,7 +214,7 @@ export default function ImageCustomization({imageLink}) {
                       objectFit: 'contain',  
                       objectPosition: 'center center',
                   }}
-                  src={imageLink}
+                  src={imageObject.imageURL}
                 />
                 {logoBlob && (
                   <div className="logo-container" style={{position: "absolute", top: `${Math.min(logoPositionTop, 100)}%`, left: `${Math.min(logoPositionLeft, 100)}%`, maxWidth: `${logoMaxWidth}px`, width: '100%', transform: "translate(-50%, -50%)"}}>
@@ -248,8 +256,27 @@ export default function ImageCustomization({imageLink}) {
                   />
                 </Card>
                 <ButtonGroup>
-                  <Button variant="primary" size="large" onClick={() => takeScreenshot('saved')}  loading={isButtonLoading} disabled={isButtonDisabled}>Save Template</Button>
-                  <Button variant="secondary" size="large" onClick={() => takeScreenshot('download')} disabled={isButtonDisabled}>Download Template</Button>
+                  {isButtonNavigate ? (
+                    <Button 
+                      variant="primary" 
+                      size="large" 
+                      disabled={isButtonDisabled}
+                      onClick={() => navigate("/personalization")} 
+                    >
+                      Go To Personalized Template
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="primary" 
+                      size="large" 
+                      onClick={() => takeScreenshot('saved')}  
+                      loading={isButtonLoading} 
+                      disabled={isButtonDisabled}
+                    >
+                      Save Personalized Template
+                    </Button>
+                  )}
+                  <Button variant="secondary" size="large" onClick={() => takeScreenshot('download')} disabled={isButtonDisabled}>Download Personalized Template</Button>
                 </ButtonGroup>
               </BlockStack>
             </BlockStack>

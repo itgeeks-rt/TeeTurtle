@@ -48,10 +48,11 @@ export default function Template() {
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadedFileBase64, setUploadedFileBase64] = useState("");
   const [requestBody, setRequestBody] = useState({
+    personalized: false,
     page: 1, 
     limit: listLimit,
   });
-  const [customizeImageUrl, setCustomizeImageUrl] = useState(null);
+  const [customizeImageUrl, setCustomizeImageUrl] = useState({});
   
   const validImageTypes = ["image/jpeg", "image/png"];
   let myHeaders = new Headers();
@@ -112,6 +113,7 @@ export default function Template() {
   const handleSearchChange = (value) => {
     setSearchValue(value);
     const updatedRequestBody = {
+      personalized: false,
       page: 1,
       limit: listLimit,
       ...(value && value.length >= 0 ? { searchQuery: value } : {}),
@@ -156,7 +158,8 @@ export default function Template() {
     const requesUploadBody = {
       imageName: imageName,
       category: selected,  
-      fileBase64: uploadedFileBase64
+      fileBase64: uploadedFileBase64,
+      personalized: false
     };
 
     fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
@@ -171,7 +174,7 @@ export default function Template() {
       if(data && data.status){  
         shopify.modal.hide('upload-image');
         shopify.toast.show('Image template created successfully.', { duration: 5000});
-        setRequestBody({ page: 1, limit: listLimit });
+        setRequestBody({ page: 1, limit: listLimit, personalized: false });
         resetForm();
       }else if (data && data.message){
         shopify.toast.show(data.message, {isError: true,}); 
@@ -199,7 +202,8 @@ export default function Template() {
   const removeTemplate = (imageId) => {
     setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: true }));
     const requestDeleteBody = {
-      imageId: imageId
+      imageId: imageId,
+      personalized: false
     };
     fetch(`${baseUrl}/external/image/deleteImage?shop=itgeeks-test.myshopify.com`, {
       method: "DELETE",
@@ -214,7 +218,7 @@ export default function Template() {
         shopify.toast.show('Image template removed successfully.', {
           duration: 5000,
         });
-        setRequestBody({ page: currentPage, limit: listLimit });
+        setRequestBody({ page: currentPage, limit: listLimit, personalized: false });
       }else if (data && data.message){
         shopify.toast.show(data.message, {isError: true});
       }
@@ -265,9 +269,9 @@ export default function Template() {
   );
 
 
-  const handlerImageCustomizerPopup = (imageURL) => {
+  const handlerImageCustomizerPopup = (imageName, imageURL, category) => {
     shopify.modal.show('customize-image');
-    setCustomizeImageUrl(imageURL);
+    setCustomizeImageUrl({imageName, imageURL, category});
   };
 
   const emptyStateMarkup = (
@@ -308,7 +312,7 @@ export default function Template() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim" onClick={() => handlerImageCustomizerPopup(imageURL)}>Use Template</Button>
+            <Button size="slim" onClick={() => handlerImageCustomizerPopup(imageName, imageURL, category)}>Use Template</Button>
             <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId)} loading={buttonRemoveLoading[imageId]}>
                 <Icon source={DeleteIcon} tone="critical" />
             </Button>   
@@ -324,7 +328,7 @@ export default function Template() {
       primaryAction={{ content: "Create new template", onAction: () => shopify.modal.show('upload-image') }}
       
     >
-      <ImageCustomization imageLink={customizeImageUrl}/>
+      <ImageCustomization imageObject={customizeImageUrl}/>
       <Modal id="upload-image">
         <Box padding={{ xs: '400', sm: '400' }}> 
           <FormLayout>
@@ -388,8 +392,8 @@ export default function Template() {
             pagination={{
               hasPrevious: hasPrevious,
               hasNext: hasNext,
-              onNext: () => setRequestBody({ ...requestBody, page: currentPage + 1 }),
-              onPrevious: () => setRequestBody({ ...requestBody, page: currentPage - 1 }),
+              onNext: () => setRequestBody({ ...requestBody, page: currentPage + 1, personalized: false }),
+              onPrevious: () => setRequestBody({ ...requestBody, page: currentPage - 1, personalized: false }),
             }}
           >
             {rowMarkup}
