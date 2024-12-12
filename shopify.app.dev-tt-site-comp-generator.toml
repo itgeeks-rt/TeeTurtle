@@ -1,11 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
-<<<<<<< HEAD
-application_url = "https://rd-descending-personality-continent.trycloudflare.com"
-=======
-application_url = "https://bs-verde-consumption-superior.trycloudflare.com"
->>>>>>> 7a4fa39c44638f0175c7ec3c2a7682067f3baee8
+application_url = "https://strengthen-philadelphia-poultry-thinks.trycloudflare.com"
 embedded = true
 name = "Dev-TT-Site-Comp-Generator"
 handle = "dev-tt-site-comp-generator"
@@ -15,19 +11,13 @@ api_version = "2024-10"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products,write_files,write_themes"
+scopes = "write_products,write_files,write_themes,read_products"
 
 [auth]
 redirect_urls = [
-<<<<<<< HEAD
-  "https://rd-descending-personality-continent.trycloudflare.com/auth/callback",
-  "https://rd-descending-personality-continent.trycloudflare.com/auth/shopify/callback",
-  "https://rd-descending-personality-continent.trycloudflare.com/api/auth/callback"
-=======
-  "https://bs-verde-consumption-superior.trycloudflare.com/auth/callback",
-  "https://bs-verde-consumption-superior.trycloudflare.com/auth/shopify/callback",
-  "https://bs-verde-consumption-superior.trycloudflare.com/api/auth/callback"
->>>>>>> 7a4fa39c44638f0175c7ec3c2a7682067f3baee8
+  "https://strengthen-philadelphia-poultry-thinks.trycloudflare.com/auth/callback",
+  "https://strengthen-philadelphia-poultry-thinks.trycloudflare.com/auth/shopify/callback",
+  "https://strengthen-philadelphia-poultry-thinks.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

@@ -13,6 +13,7 @@ export const uploadImage = async (req, res, session) => {
   const imageName = req.body.imageName
   const category = req.body.category
   const fileBase64 = req.body.fileBase64
+  const colorName = req.body.colorName
   const isPersonalized = req.body.personalized
 
   console.log(req.body);
@@ -147,7 +148,8 @@ export const uploadImage = async (req, res, session) => {
         updatedAt: updatedAt,
         createdAt: createdAt,
         category: category,
-        imageName: imageName
+        imageName: imageName,
+        colorName: colorName,
       })
 
       return result
@@ -161,7 +163,8 @@ export const uploadImage = async (req, res, session) => {
         updatedAt: updatedAt,
         createdAt: createdAt,
         category: category,
-        imageName: imageName
+        imageName: imageName,
+        colorName: colorName,
       })
 
       return result

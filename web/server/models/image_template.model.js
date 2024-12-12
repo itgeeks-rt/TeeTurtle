@@ -18,6 +18,9 @@ const  image_template = (sequelize, Sequelize) => {
     },
     updatedAt: {
     type: Sequelize.DATE
+    },
+    colorName: {
+    type: Sequelize.STRING
     }
     });
     return image_template;
