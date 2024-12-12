@@ -34,6 +34,7 @@ export default function Template() {
 
   // State variables for managing images, pagination, form inputs, and loading states
   const [imageName, setImageName] = useState("");
+  const [colorName, setColorName] = useState("");
   const [fetchImages, setFetchImages] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const [pagination, setPagination] = useState([]);
@@ -122,8 +123,8 @@ export default function Template() {
   };
 
   /* Image upload form validation */
-  const validateForm = (name, category, uploadFile) => {
-    setIsButtonEnabled(name && category && category !== 'Select' && uploadFile);
+  const validateForm = (name, colorName, category, uploadFile) => {
+    setIsButtonEnabled(name && colorName && category && category !== 'Select' && uploadFile);
   };
 
   /* Convert file to Base64 for upload */
@@ -141,12 +142,12 @@ export default function Template() {
     const maxSize = 5 * 1024 * 1024;
     if (file && validImageTypes.includes(file.type) && file.size <= maxSize) {
       setUploadFile(file);
-      validateForm(imageName, selected, file);
+      validateForm(imageName, colorName, selected, file);
       convertToBase64(file);
     } else {
       setUploadFile(null);
       setUploadedFileBase64("");
-      validateForm(imageName, selected, null);
+      validateForm(imageName, colorName, selected, null);
       shopify.toast.show('Maximum file size is 5MB', { isError: true });
     }
   }, [imageName, selected]);
@@ -159,6 +160,7 @@ export default function Template() {
       imageName: imageName,
       category: selected,  
       fileBase64: uploadedFileBase64,
+      colorName: colorName,
       personalized: false
     };
 
@@ -231,11 +233,15 @@ export default function Template() {
 
   const imageNameInput = (value) => {
     setImageName(value);
-    validateForm(value, selected, uploadedFile);
+    validateForm(value, colorName, selected, uploadedFile);
+  };
+  const colorNameInput = (value) => {
+    setColorName(value);
+    validateForm(imageName, value, selected, uploadedFile);
   };
   const handleSelectChange = (value) => {
     setSelected(value);
-    validateForm(imageName, value, uploadedFile);
+    validateForm(imageName, colorName, value, uploadedFile);
   };
 
   const fileUpload = !uploadFile && <DropZone.FileUpload actionHint="Accepts only .jpg and .png" />;
@@ -284,12 +290,12 @@ export default function Template() {
  
   const resourceName = {
     singular: 'image',
-    plural: 'images',
+    plural: 'images', 
   };
 
   const rowMarkup = fetchImages.map(
     (
-      { id, imageURL, imageName, createdAt, category, imageId },
+      { id, imageURL, imageName, createdAt, category, imageId, colorName},
       index,
     ) => (
       <IndexTable.Row
@@ -305,6 +311,7 @@ export default function Template() {
         </IndexTable.Cell>
         <IndexTable.Cell>{imageName}</IndexTable.Cell>
         <IndexTable.Cell>{category}</IndexTable.Cell>
+        <IndexTable.Cell>{colorName}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text as="span" alignment="end">
             {createdAt}
@@ -340,6 +347,14 @@ export default function Template() {
               placeholder="Image Name" 
               clearButton
               onClearButtonClick={() => imageNameInput("")}
+            />
+            <TextField
+              label="Color Name"
+              value={colorName}
+              onChange={colorNameInput}
+              placeholder="Color Name" 
+              clearButton
+              onClearButtonClick={() => colorNameInput("")}
             />
             <Select
               label="Select Category"
@@ -385,6 +400,7 @@ export default function Template() {
               { title: "Image" },
               { title: "Name" },
               { title: "Category" },
+              { title: "Color" },
               { title: "Create Date", alignment: "end" },
               { title: "Action", alignment: "end" },
             ]}
@@ -399,7 +415,7 @@ export default function Template() {
             {rowMarkup}
           </IndexTable>
           {loadingSpinner && (
-            <Box as="span" className="table-loading__spinner" position="absolute">
+            <Box as="span" className="box-center__center" position="absolute">
               <Spinner accessibilityLabel="Loading Spinner" size="large" />
             </Box>
           )}

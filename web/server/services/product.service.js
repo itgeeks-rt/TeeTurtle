@@ -15,7 +15,7 @@ export const getProductList = async (req, res, session) => {
         `first:10,query:"${searchQuery}",sortKey:${sortKey}`;
     
 
-  const QUERY = `query {
+const QUERY = `query {
   products(${cursor}) {
     edges {
       node {
@@ -36,8 +36,7 @@ export const getProductList = async (req, res, session) => {
         hasNextPage
     }
   }
-} 
-`;
+}`;
 
   const client = new shopify.api.clients.Graphql({ session });
   const response = await client.request(QUERY);
