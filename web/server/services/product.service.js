@@ -13,7 +13,7 @@ export const getProductList = async (req, res, session) => {
         `last:10,query:"${searchQuery}",before:"${cursorBefore}"` :
         `first:10,query:"${searchQuery}"`;
 
-  const QUERY = `query {
+const QUERY = `query {
   products(${cursor}) {
     edges {
       node {
@@ -32,8 +32,7 @@ export const getProductList = async (req, res, session) => {
       hasNextPage
     }
   }
-} 
-`;
+}`;
 
   
 

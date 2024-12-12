@@ -20,15 +20,18 @@ import variable from '../Variable';
 import { useState, useEffect} from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteIcon } from '@shopify/polaris-icons';
+import FetchProduct from '../components/FetchProduct'
+
 
 export default function Personalization() {
   const { t } = useTranslation();
-  const listLimit = 10;
+  const listLimit = 7;
   const shopify = useAppBridge(); 
   const baseUrl = variable.Base_Url;
 
   // State variables for managing images, pagination, form inputs, and loading states
   const [fetchImages, setFetchImages] = useState([]);
+  const [selectedImageUrl, setSelectedImageUrl] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const [pagination, setPagination] = useState([]);
   const [hasNext, setHasNext] = useState(false);
@@ -37,6 +40,7 @@ export default function Personalization() {
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [buttonRemoveLoading, setButtonRemoveLoading] = useState(false);
   const [loadingSpinner, setLoadingSpinner] = useState(false);
+  const [isModalButtonClick, setIsModalButtonClick] = useState(false);
   const [requestBody, setRequestBody] = useState({
     personalized: true,
     page: 1, 
@@ -143,6 +147,16 @@ export default function Personalization() {
 
   const {selectedResources, allResourcesSelected, handleSelectionChange} = useIndexResourceState(fetchImages);
 
+  const modalHandler = () => {
+    setIsModalButtonClick(true)
+    shopify.modal.show('select-product');
+    const selectedImages = selectedResources.map((id) => {
+      const selectedImage = fetchImages.find((image) => image.id === id);
+      return selectedImage?.imageURL; // Return the URL or undefined if not found
+    }).filter(Boolean);
+    setSelectedImageUrl(selectedImages);
+  }
+
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
     setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
@@ -186,67 +200,25 @@ export default function Personalization() {
   return (
     <Page
       title="Personalized Templates"
-      primaryAction={{ content: "Select Product", onAction: () => shopify.modal.show('select-product'), disabled: isButtonDisabled }}
+      primaryAction={{ content: "Select Product", onAction: () => modalHandler(), disabled: isButtonDisabled }}
     >
-      <Modal id="select-product">
-        <Box padding={{ xs: '0', sm: '0' }}> 
-          <Box padding={{ xs: '400', sm: '400' }} borderBlockEndWidth="0165" borderColor="border-brand">
-            <TextField
-              value={searchValue}
-              onChange={handleSearchChange}
-              placeholder="Search products"
-              clearButton
-              onClearButtonClick={() => handleSearchChange("")}
-            />
-          </Box>
-          <Box position="relative">  
-            <IndexTable
-              condensed={useBreakpoints().smDown}
-              resourceName={resourceName}
-              itemCount={fetchImages.length}
-              emptyState={emptyStateMarkup} 
-              selectedItemsCount={
-                allResourcesSelected ? 'All' : selectedResources.length
-              }
-              onSelectionChange={handleSelectionChange}
-              headings={[
-                { title: "Image" },
-                { title: "Name" },
-                { title: "Category" },
-                { title: "Create Date", alignment: "end" },
-                { title: "Action", alignment: "end" },
-              ]}
-              selectable={true}
-              pagination={{
-                hasPrevious: hasPrevious,
-                hasNext: hasNext,
-                onNext: () => setRequestBody({ ...requestBody, page: currentPage + 1, personalized: true }),
-                onPrevious: () => setRequestBody({ ...requestBody, page: currentPage - 1, personalized: true }),
-              }}
-            >
-              {rowMarkup}
-            </IndexTable>
-            {loadingSpinner && (
-              <Box as="span" className="table-loading__spinner" position="absolute">
-                <Spinner accessibilityLabel="Loading Spinner" size="large" />
-              </Box>
-            )}
-          </Box>
-        </Box>
-        <TitleBar title="All products">
-          <button onClick={() => shopify.modal.hide('my-modal')}>Label</button>
-        </TitleBar>
-      </Modal> 
+      
+      <Modal id="select-product" onHide={() => setIsModalButtonClick(false)}>
+        {isModalButtonClick ? (
+          <FetchProduct selectedTemplates={selectedImageUrl}/>
+        ): null}
+        <TitleBar title="All products"></TitleBar> 
+      </Modal>  
       <Card padding={{ xs: '0', sm: '0' }}> 
         <Box padding={{ xs: '400', sm: '400' }} borderBlockEndWidth="0165" borderColor="border-brand">
           <TextField
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder="Search By Category/Name"
+            placeholder="Search By Category/Name" 
             clearButton
             onClearButtonClick={() => handleSearchChange("")}
           />
-        </Box> 
+        </Box>
         <Box position="relative">  
           <IndexTable
             condensed={useBreakpoints().smDown}
@@ -275,7 +247,7 @@ export default function Personalization() {
             {rowMarkup}
           </IndexTable>
           {loadingSpinner && (
-            <Box as="span" className="table-loading__spinner" position="absolute">
+            <Box as="span" className="box-center__center" position="absolute">
               <Spinner accessibilityLabel="Loading Spinner" size="large" />
             </Box>
           )}
