@@ -164,7 +164,7 @@ export default function Personalization() {
 
   const rowMarkup = fetchImages.map(
     (
-      { id, imageURL, imageName, createdAt, category, imageId },
+      { id, imageURL, imageName, createdAt, category, imageId, colorName },
       index,
     ) => (
       <IndexTable.Row
@@ -181,6 +181,7 @@ export default function Personalization() {
         </IndexTable.Cell>
         <IndexTable.Cell>{imageName}</IndexTable.Cell>
         <IndexTable.Cell>{category}</IndexTable.Cell>
+        <IndexTable.Cell>{colorName}</IndexTable.Cell>
         <IndexTable.Cell>
           <Text as="span" alignment="end">
             {createdAt}
@@ -233,6 +234,7 @@ export default function Personalization() {
               { title: "Image" },
               { title: "Name" },
               { title: "Category" },
+              { title: "Color" },
               { title: "Create Date", alignment: "end" },
               { title: "Action", alignment: "end" },
             ]}
