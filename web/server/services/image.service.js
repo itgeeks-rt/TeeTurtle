@@ -7,6 +7,7 @@ import db from "../models/index.js";
 import { Op } from "sequelize";
 const image_template = db.image_template
 const personalized_image = db.personalized_image
+const Sequelize=db.Sequelize
 
 export const uploadImage = async (req, res, session) => {
 
@@ -272,28 +273,51 @@ export const deleteImage = async (req, res, session) => {
 
 
 export const getImageList = async (req, res, session) => {
-  const { shop } = req.query;
-  const isPersonalized=req.body.personalized
-  console.log("getImageList--API---shop--", shop);
+
   const page = parseInt(req.body.page) || 1
   const limit = parseInt(req.body.limit) || 5
-
   const offset = (page - 1) * limit
-
   const searchQuery = req.body?.searchQuery || ""
+  const isPersonalized = req.body.personalized
+  const category = req.body.category === "empty" ? "" : req.body.category
+  const color = req.body.color === "empty" ? "" : req.body.color
 
- if(isPersonalized){
-  const result = await personalized_image.findAndCountAll({
-    offset: offset,
-    limit: limit,
-    where: {
+  const finder = category && color ?
+      {
+        colorName: color,
+       category: category
+      } :
+    category ? 
+    {
+      category: category
+    } : 
+    color ?
+     {
+      colorName: color
+    } :
+     {
       [Op.or]: [
         { category: { [Op.like]: '%' + searchQuery + '%' } },
         { imageName: { [Op.like]: '%' + searchQuery + '%' } }
       ]
-    },
-    order: [['updatedAt', 'DESC']],
+    }
 
+ if(isPersonalized){
+  const colorResponse=await personalized_image.findAll({
+    attributes: [
+      [Sequelize.fn('DISTINCT', Sequelize.col('colorName')), 'colorName']
+  ],
+    distinct: true
+  }) 
+
+ const allColors= colorResponse.map((obj)=>{
+  return obj?.dataValues?.colorName
+  })
+  const result = await personalized_image.findAndCountAll({
+    offset: offset,
+    limit: limit,
+    where: finder,
+    order: [['updatedAt', 'DESC']],
 
   });
 
@@ -304,20 +328,26 @@ export const getImageList = async (req, res, session) => {
   }
 
   result.pagination = pagination
+  result.allColors = allColors
   delete result.count;
 
   return result
  }
  else{
+  const colorResponse=await image_template.findAll({
+    attributes: [
+      [Sequelize.fn('DISTINCT', Sequelize.col('colorName')), 'colorName']
+  ],
+    distinct: true
+  }) 
+
+ const allColors= colorResponse.map((obj)=>{
+  return obj?.dataValues?.colorName
+  })
   const result = await image_template.findAndCountAll({
     offset: offset,
     limit: limit,
-    where: {
-      [Op.or]: [
-        { category: { [Op.like]: '%' + searchQuery + '%' } },
-        { imageName: { [Op.like]: '%' + searchQuery + '%' } }
-      ]
-    },
+    where:finder,
     order: [['updatedAt', 'DESC']],
 
 
@@ -330,6 +360,7 @@ export const getImageList = async (req, res, session) => {
   }
 
   result.pagination = pagination
+  result.allColors = allColors
   delete result.count;
 
   return result

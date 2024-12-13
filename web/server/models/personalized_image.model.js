@@ -20,8 +20,8 @@ const  personalized_image = (sequelize, Sequelize) => {
     type: Sequelize.DATE
     },
     colorName: {
-        type: Sequelize.STRING
-        }
+    type: Sequelize.STRING
+    }
     });
     return personalized_image;
     };

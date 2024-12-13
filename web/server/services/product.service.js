@@ -28,6 +28,17 @@ const QUERY = `query {
             }
           }
         }
+        variants(first: 250) {
+          edges {
+            node {
+              id
+              title
+              image {
+                url
+              }
+            }
+          }
+        }
       }
        cursor
     }
