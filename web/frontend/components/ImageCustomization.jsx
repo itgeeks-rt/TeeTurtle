@@ -10,22 +10,24 @@ import {
     RangeSlider,
     ButtonGroup
   } from "@shopify/polaris";
-  import '../assets/styles.css';
-  import { Modal, TitleBar, useAppBridge} from '@shopify/app-bridge-react';
-  import { useState, useCallback, useRef} from "react";
-  import variable from '../Variable';
-  import { useTranslation } from "react-i18next";
-  import { NoteIcon } from '@shopify/polaris-icons'; 
-  import html2canvas from 'html2canvas';
-  import { useNavigate } from 'react-router-dom';
+import '../assets/styles.css';
+import { useAppBridge} from '@shopify/app-bridge-react';
+import { useState, useCallback, useRef} from "react";
+import variable from '../Variable';
+import { useTranslation } from "react-i18next";
+import { NoteIcon } from '@shopify/polaris-icons'; 
+import html2canvas from 'html2canvas';
+import { useNavigate } from 'react-router-dom';
 
 
 export default function ImageCustomization({imageObject}) {
   const { t } = useTranslation();
 
+
   const navigate = useNavigate();
   const baseUrl = variable.Base_Url;
   const shopify = useAppBridge();
+  const firstImageUrl = imageObject.rows[0].imageURL;
   const [uploadLogo, setUploadLogo] = useState(null);
   const [logoBlob, setLogoBlob] = useState(null); 
   const validImageTypes = ["image/jpeg", "image/png"];
@@ -49,17 +51,6 @@ export default function ImageCustomization({imageObject}) {
   }
   const handleChangeLogoPositionLeft = (value) => {
     setLogoPositionLeft(value);
-  }
-
-
-  const clearModalValues = () => {
-    setLogoMaxWidth(50);
-    setLogoPositionTop(50);
-    setLogoPositionLeft(50);
-    setUploadLogo(null);
-    setLogoBlob(null); 
-    setIsButtonDisabled(true);
-    setIsButtonNavigate(false);
   }
  
   /* Logo upload for customization */
@@ -145,6 +136,7 @@ export default function ImageCustomization({imageObject}) {
     const requesUploadBody = {
       imageName: imageObject.imageName,
       category: imageObject.category,  
+      colorName: imageObject.colorName,  
       fileBase64: base64Image,
       personalized: true
     };
@@ -201,88 +193,85 @@ export default function ImageCustomization({imageObject}) {
   );
 
   return (
-    <Modal id="customize-image" variant="max" onHide={clearModalValues}>
-        <Box padding={{ xs: '400', sm: '1000' }}>
-          <InlineGrid gap="1000" columns={{xs: 1, sm: 1, md: 2, lg: 2}}>
-            <Box className="personalization-image__box"> 
-              <Box ref={mediaRef} className="personalization-image__media">
-                <img
-                  alt=""
-                  width="100%"
-                  height="100%"
-                  style={{
-                      objectFit: 'contain',  
-                      objectPosition: 'center center',
-                  }}
-                  src={imageObject.imageURL}
-                />
-                {logoBlob && (
-                  <div className="logo-container" style={{position: "absolute", top: `${Math.min(logoPositionTop, 100)}%`, left: `${Math.min(logoPositionLeft, 100)}%`, maxWidth: `${logoMaxWidth}px`, width: '100%', transform: "translate(-50%, -50%)"}}>
-                      <img src={logoBlob} crossOrigin="anonymous" alt="Uploaded Logo" style={{width: '100%', height: 'auto' }} />
-                  </div>
-                )}
-              </Box> 
-            </Box>
-            <BlockStack gap="500">
-              <DropZone label="Upload your logo" onDrop={handleDropZoneLogo} accept={validImageTypes} variableHeight>
-                  {uploadLogoFile}
-                  {logoUpload} 
-              </DropZone>
-              <BlockStack gap="500">
-                <Card>
-                  <RangeSlider
-                    label="Logo size" 
-                    min={50}
-                    max={250}
-                    value={logoMaxWidth}
-                    onChange={handleChangeLogoSize}
-                    output
-                  />
-                </Card>
-                <Card>
-                  <RangeSlider
-                    label="Logo position top"
-                    value={logoPositionTop}
-                    onChange={handleChangeLogoPositionTop}
-                    output
-                  />
-                </Card>
-                <Card>
-                  <RangeSlider
-                    label="Logo position left"
-                    value={logoPositionLeft}
-                    onChange={handleChangeLogoPositionLeft}
-                    output
-                  />
-                </Card>
-                <ButtonGroup>
-                  {isButtonNavigate ? (
-                    <Button 
-                      variant="primary" 
-                      size="large" 
-                      disabled={isButtonDisabled}
-                      onClick={() => navigate("/personalization")} 
-                    >
-                      Go To Personalized Template
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="primary" 
-                      size="large" 
-                      onClick={() => takeScreenshot('saved')}  
-                      loading={isButtonLoading} 
-                      disabled={isButtonDisabled}
-                    >
-                      Save Personalized Template
-                    </Button>
-                  )}
-                  <Button variant="secondary" size="large" onClick={() => takeScreenshot('download')} disabled={isButtonDisabled}>Download Personalized Template</Button>
-                </ButtonGroup>
-              </BlockStack>
-            </BlockStack>
-          </InlineGrid>
+    <Box padding={{ xs: '400', sm: '1000' }}>
+      <InlineGrid gap="1000" columns={{xs: 1, sm: 1, md: 2, lg: 2}}>
+        <Box className="personalization-image__box"> 
+          <Box ref={mediaRef} className="personalization-image__media">
+            <img
+              alt=""
+              width="100%"
+              height="100%"
+              style={{
+                  objectFit: 'contain',  
+                  objectPosition: 'center center',
+              }}
+              src={firstImageUrl}
+            />
+            {logoBlob && (
+              <div className="logo-container" style={{position: "absolute", top: `${Math.min(logoPositionTop, 100)}%`, left: `${Math.min(logoPositionLeft, 100)}%`, maxWidth: `${logoMaxWidth}px`, width: '100%', transform: "translate(-50%, -50%)"}}>
+                  <img src={logoBlob} crossOrigin="anonymous" alt="Uploaded Logo" style={{width: '100%', height: 'auto' }} />
+              </div>
+            )}
+          </Box> 
         </Box>
-        <TitleBar title="Template Image Personalizer"></TitleBar>
-    </Modal>  
+        <BlockStack gap="500">
+          <DropZone label="Upload your logo" onDrop={handleDropZoneLogo} accept={validImageTypes} variableHeight>
+              {uploadLogoFile}
+              {logoUpload} 
+          </DropZone>
+          <BlockStack gap="500">
+            <Card>
+              <RangeSlider
+                label="Logo size" 
+                min={50}
+                max={250}
+                value={logoMaxWidth}
+                onChange={handleChangeLogoSize}
+                output
+              />
+            </Card>
+            <Card>
+              <RangeSlider
+                label="Logo position top"
+                value={logoPositionTop}
+                onChange={handleChangeLogoPositionTop}
+                output
+              />
+            </Card>
+            <Card>
+              <RangeSlider
+                label="Logo position left"
+                value={logoPositionLeft}
+                onChange={handleChangeLogoPositionLeft}
+                output
+              />
+            </Card>
+            <ButtonGroup>
+              {isButtonNavigate ? (
+                <Button 
+                  variant="primary" 
+                  size="large" 
+                  disabled={isButtonDisabled}
+                  onClick={() => navigate("/personalization")} 
+                >
+                  Go To Personalized Template
+                </Button>
+              ) : (
+                <Button 
+                  variant="primary" 
+                  size="large" 
+                  onClick={() => takeScreenshot('saved')}  
+                  loading={isButtonLoading} 
+                  disabled={isButtonDisabled}
+                >
+                  Save Personalized Template
+                </Button>
+              )}
+              <Button variant="secondary" size="large" onClick={() => takeScreenshot('download')} disabled={isButtonDisabled}>Download Personalized Template</Button>
+            </ButtonGroup>
+          </BlockStack>
+        </BlockStack>
+      </InlineGrid>
+    </Box>
   );
 }

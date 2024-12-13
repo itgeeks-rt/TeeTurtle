@@ -15,7 +15,11 @@ import {
   Spinner,
   FormLayout,
   DropZone,
-  BlockStack
+  useIndexResourceState,
+  BlockStack,
+  Popover, 
+  ChoiceList,
+  Badge
 } from "@shopify/polaris";
 import '../assets/styles.css';
 import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
@@ -25,6 +29,9 @@ import { useTranslation } from "react-i18next";
 import { DeleteIcon } from '@shopify/polaris-icons';
 import { NoteIcon } from '@shopify/polaris-icons';
 import ImageCustomization from '../components/ImageCustomization'
+import { SearchIcon } from '@shopify/polaris-icons';
+
+
 
 export default function Template() {
   const { t } = useTranslation();
@@ -48,12 +55,24 @@ export default function Template() {
   const [loadingSpinner, setLoadingSpinner] = useState(false);
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadedFileBase64, setUploadedFileBase64] = useState("");
+  const [popoverCategoryActive, setCategoryPopoverActive] = useState(false);
+  const [popoverColorActive, setColorPopoverActive] = useState(false);
+  const [selectedCategoryChoice, setSelectedCategoryChoice] = useState(['empty']);
+  const [selectedColorChoice, setSelectedColorChoice] = useState(['empty']);
+  const [selectedCategoryChoiceStr, setSelectedCategoryChoiceStr] = useState('empty');
+  const [selectedColorChoiceStr, setSelectedColorChoiceStr] = useState('empty');
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+  const [selectedTableRow, setSelectedTableRow] = useState({});
+  const [isModalButtonClick, setIsModalButtonClick] = useState(false);
+  const [templateColors, setTemplateColors] = useState([]);
   const [requestBody, setRequestBody] = useState({
+    color: "empty",
+    category: "empty",
     personalized: false,
     page: 1, 
     limit: listLimit,
   });
-  const [customizeImageUrl, setCustomizeImageUrl] = useState({});
+  
   
   const validImageTypes = ["image/jpeg", "image/png"];
   let myHeaders = new Headers();
@@ -84,8 +103,11 @@ export default function Template() {
     })
       .then((res) => res.json())
       .then((data) => {
+        console.log(data)
         const items = data?.result.rows || [];
         const itemPagination = data?.result.pagination || [];
+        const colors = data?.result.colors || [];
+        setTemplateColors(colors)
         setPagination(itemPagination);
         setFetchImages(items); 
         setLoadingSpinner(false);
@@ -95,7 +117,6 @@ export default function Template() {
         console.error(err)
       });
   }, [requestBody]);
-
 
   /* Update pagination status based on the response */
   useEffect(() => {
@@ -115,6 +136,8 @@ export default function Template() {
     setSearchValue(value);
     const updatedRequestBody = {
       personalized: false,
+      color: selectedColorChoiceStr,
+      category: selectedCategoryChoiceStr,
       page: 1,
       limit: listLimit,
       ...(value && value.length >= 0 ? { searchQuery: value } : {}),
@@ -176,7 +199,7 @@ export default function Template() {
       if(data && data.status){  
         shopify.modal.hide('upload-image');
         shopify.toast.show('Image template created successfully.', { duration: 5000});
-        setRequestBody({ page: 1, limit: listLimit, personalized: false });
+        setRequestBody({ page: 1, color: selectedColorChoiceStr, category: selectedCategoryChoiceStr, limit: listLimit, personalized: false });
         resetForm();
       }else if (data && data.message){
         shopify.toast.show(data.message, {isError: true,}); 
@@ -220,7 +243,7 @@ export default function Template() {
         shopify.toast.show('Image template removed successfully.', {
           duration: 5000,
         });
-        setRequestBody({ page: currentPage, limit: listLimit, personalized: false });
+        setRequestBody({ page: currentPage, color: selectedColorChoiceStr, category: selectedCategoryChoiceStr, limit: listLimit, personalized: false });
       }else if (data && data.message){
         shopify.toast.show(data.message, {isError: true});
       }
@@ -265,7 +288,7 @@ export default function Template() {
           tone="critical"
           onClick={() => {
             setUploadFile(null);
-            validateForm(imageName, selected, null);
+            validateForm(imageName, colorName, selected, null);
           }}
         >
           Change
@@ -275,10 +298,34 @@ export default function Template() {
   );
 
 
-  const handlerImageCustomizerPopup = (imageName, imageURL, category) => {
+  const {selectedResources, allResourcesSelected, handleSelectionChange} = useIndexResourceState(fetchImages);
+
+  // Update the disabled state of the button whenever selectedResources changes
+  useEffect(() => {
+    setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
+  }, [selectedResources]);
+
+
+  const modalHandler = () => {
+    const selectedRows = selectedResources.map((id) => {
+      const selectedImage = fetchImages.find((image) => image.id === id);
+      if (selectedImage) {
+        return {
+          imageURL: selectedImage.imageURL,
+          name: selectedImage.imageName,
+          category: selectedImage.category,
+          color: selectedImage.colorName,
+        };
+      }
+      return null;
+    }).filter(Boolean);
+    setSelectedTableRow({
+      rows: selectedRows,
+    });
+    setIsModalButtonClick(true);
     shopify.modal.show('customize-image');
-    setCustomizeImageUrl({imageName, imageURL, category});
-  };
+  }
+
 
   const emptyStateMarkup = (
     <EmptySearchResult
@@ -302,6 +349,7 @@ export default function Template() {
         id={id}
         key={imageId}
         position={index}
+        selected={selectedResources.includes(id)}
       >
         <IndexTable.Cell>
           <Thumbnail
@@ -319,7 +367,6 @@ export default function Template() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim" onClick={() => handlerImageCustomizerPopup(imageName, imageURL, category)}>Use Template</Button>
             <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId)} loading={buttonRemoveLoading[imageId]}>
                 <Icon source={DeleteIcon} tone="critical" />
             </Button>   
@@ -328,14 +375,48 @@ export default function Template() {
       </IndexTable.Row>
     ),
   ); 
+  
+  /* Sort by category */
+  const toggleCategoryPopoverActive = useCallback(() => setCategoryPopoverActive((popoverCategoryActive) => !popoverCategoryActive),[],);
+  const handleCategoryChange = useCallback((value) => {
+    setSelectedCategoryChoice(value), [];
+    setSelectedCategoryChoiceStr(value[0]);
+    setRequestBody({ page: currentPage, color: selectedColorChoiceStr, category: value[0], limit: listLimit, personalized: false });
+  });
+  const categoryPopupButton = (
+    <Button onClick={toggleCategoryPopoverActive} disclosure size="large">Sort by category</Button>
+  );
+
+   /* Sort by color */
+   const toggleColorPopoverActive = useCallback(() => setColorPopoverActive((popoverColorActive) => !popoverColorActive),[],);
+   const handleColorChange = useCallback((value) => {
+    setSelectedColorChoice(value), [];
+    setSelectedColorChoiceStr(value[0]);
+    setRequestBody({ page: currentPage, color: value[0], category: selectedCategoryChoiceStr, limit: listLimit, personalized: false });
+   });
+   const colorPopupButton = (
+     <Button onClick={toggleColorPopoverActive} disclosure size="large">Sort by color</Button>
+   );
+
+   const colorChoices = [
+    { label: 'All color', value: 'empty' }, // Include 'All color' as a default option
+    ...templateColors.map((color) => ({ label: color, value: color })),
+  ];
+  
 
   return (
     <Page
       title="Templates"
       primaryAction={{ content: "Create new template", onAction: () => shopify.modal.show('upload-image') }}
-      
+      secondaryActions ={[{content: "Use template", onAction: () => modalHandler(), disabled: isButtonDisabled}]}
     >
-      <ImageCustomization imageObject={customizeImageUrl}/>
+      <Modal id="customize-image" variant="max" onHide={() => setIsModalButtonClick(false)}>
+        {isModalButtonClick && (
+          <ImageCustomization imageObject={selectedTableRow}/>
+        )}
+        <TitleBar title="Template Image Personalizer"></TitleBar>
+      </Modal>
+      
       <Modal id="upload-image">
         <Box padding={{ xs: '400', sm: '400' }}> 
           <FormLayout>
@@ -348,7 +429,7 @@ export default function Template() {
               clearButton
               onClearButtonClick={() => imageNameInput("")}
             />
-            <TextField
+            <TextField 
               label="Color Name"
               value={colorName}
               onChange={colorNameInput}
@@ -381,14 +462,54 @@ export default function Template() {
         <TitleBar title="Create template and upload a new image"></TitleBar>
       </Modal> 
       <Card padding={{ xs: '0', sm: '0' }}> 
-        <Box padding={{ xs: '400', sm: '400' }}>
+        <Box padding={{ xs: '400', sm: '400' }} className="searchbar-with__filters">
           <TextField
+            prefix={<Icon source={SearchIcon}/>}
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder="Search By Category/Name"
+            placeholder="Search By Template Name"
             clearButton
             onClearButtonClick={() => handleSearchChange("")}
           />
+          <Popover
+            active={popoverCategoryActive}
+            activator={categoryPopupButton}
+            autofocusTarget="first-node" 
+            onClose={toggleCategoryPopoverActive}
+          >
+            <Box padding={{ xs: '400', sm: '400' }}>
+              <ChoiceList
+                choices={[
+                  {label: 'All category', value: 'empty'},
+                  {label: 'Classic Cotton', value: 'Classic Cotton'},
+                  {label: 'Premium Cotton', value: 'Premium Cotton'},
+                  {label: 'Long Sleeve', value: 'Long Sleeve'},
+                  {label: 'Crew Neck', value: 'Crew Neck'},
+                  {label: 'Hoodie', value: 'Hoodie'},
+                  {label: 'V-Neck', value: 'V-Neck'},
+                  {label: 'Tank Top', value: 'Tank Top'},
+                  {label: 'Mugs', value: 'Mugs'},
+
+                ]}
+                selected={selectedCategoryChoice}
+                onChange={handleCategoryChange}
+              />
+            </Box>
+          </Popover>
+          <Popover
+            active={popoverColorActive}
+            activator={colorPopupButton}
+            autofocusTarget="first-node" 
+            onClose={toggleColorPopoverActive}
+          >
+            <Box padding={{ xs: '400', sm: '400' }}>
+              <ChoiceList
+                choices={colorChoices}
+                selected={selectedColorChoice}
+                onChange={handleColorChange}
+              />
+            </Box>
+          </Popover>
         </Box>
         <Box position="relative">  
           <IndexTable
@@ -396,6 +517,10 @@ export default function Template() {
             resourceName={resourceName}
             itemCount={fetchImages.length}
             emptyState={emptyStateMarkup} 
+            selectedItemsCount={
+              allResourcesSelected ? 'All' : selectedResources.length
+            }
+            onSelectionChange={handleSelectionChange}
             headings={[
               { title: "Image" },
               { title: "Name" },
@@ -404,12 +529,12 @@ export default function Template() {
               { title: "Create Date", alignment: "end" },
               { title: "Action", alignment: "end" },
             ]}
-            selectable={false}
+            selectable={true}
             pagination={{
               hasPrevious: hasPrevious,
               hasNext: hasNext,
-              onNext: () => setRequestBody({ ...requestBody, page: currentPage + 1, personalized: false }),
-              onPrevious: () => setRequestBody({ ...requestBody, page: currentPage - 1, personalized: false }),
+              onNext: () => setRequestBody({ ...requestBody, page: currentPage + 1, personalized: false, color: selectedColorChoiceStr, category: selectedCategoryChoiceStr }),
+              onPrevious: () => setRequestBody({ ...requestBody, page: currentPage - 1, personalized: false, color: selectedColorChoiceStr, category: selectedCategoryChoiceStr }),
             }}
           >
             {rowMarkup}
