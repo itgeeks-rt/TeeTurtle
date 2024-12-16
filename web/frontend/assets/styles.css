@@ -35,3 +35,16 @@
     gap: 10px;
     align-items: center;
 }
+.image-media__list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: left;
+    gap: 10px;
+}
+.swatch-image {
+    cursor: pointer;
+}
+.swatch-image.active .Polaris-Thumbnail {
+    border: 1px solid #000;
+}

@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
-application_url = "https://parking-mistakes-yourself-opportunity.trycloudflare.com"
+application_url = "https://jake-passing-drugs-elementary.trycloudflare.com"
 embedded = true
 name = "Dev-TT-Site-Comp-Generator"
 handle = "dev-tt-site-comp-generator"
@@ -15,9 +15,9 @@ scopes = "write_products,write_files,write_themes,read_products"
 
 [auth]
 redirect_urls = [
-  "https://parking-mistakes-yourself-opportunity.trycloudflare.com/auth/callback",
-  "https://parking-mistakes-yourself-opportunity.trycloudflare.com/auth/shopify/callback",
-  "https://parking-mistakes-yourself-opportunity.trycloudflare.com/api/auth/callback"
+  "https://jake-passing-drugs-elementary.trycloudflare.com/auth/callback",
+  "https://jake-passing-drugs-elementary.trycloudflare.com/auth/shopify/callback",
+  "https://jake-passing-drugs-elementary.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

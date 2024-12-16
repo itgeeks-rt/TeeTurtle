@@ -19,7 +19,8 @@ import {
   BlockStack,
   Popover, 
   ChoiceList,
-  Badge
+  Badge,
+  InlineStack
 } from "@shopify/polaris";
 import '../assets/styles.css';
 import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
@@ -65,6 +66,8 @@ export default function Template() {
   const [selectedTableRow, setSelectedTableRow] = useState({});
   const [isModalButtonClick, setIsModalButtonClick] = useState(false);
   const [templateColors, setTemplateColors] = useState([]);
+  const [fetchImageObject, setFetchImageObject] = useState([]);
+  const [removeImageId, setRemoveImageId] = useState([]);
   const [requestBody, setRequestBody] = useState({
     color: "empty",
     category: "empty",
@@ -72,8 +75,7 @@ export default function Template() {
     page: 1, 
     limit: listLimit,
   });
-  
-  
+    
   const validImageTypes = ["image/jpeg", "image/png"];
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
@@ -111,6 +113,14 @@ export default function Template() {
         setPagination(itemPagination);
         setFetchImages(items); 
         setLoadingSpinner(false);
+        setFetchImageObject((prev) => {
+          const merged = [...prev, ...items];
+          const unique = merged.filter(
+            (item, index, self) => 
+              index === self.findIndex((i) => i.imageURL === item.imageURL) // Change 'id' to your unique property if necessary
+          );
+          return unique;
+        });
       })
       .catch((err) => {
         shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
@@ -224,7 +234,8 @@ export default function Template() {
 
 
   /* Handle image deletion */
-  const removeTemplate = (imageId) => {
+  const removeTemplate = (imageId, id) => {
+    setRemoveImageId([id]);
     setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: true }));
     const requestDeleteBody = {
       imageId: imageId,
@@ -298,30 +309,33 @@ export default function Template() {
   );
 
 
-  const {selectedResources, allResourcesSelected, handleSelectionChange} = useIndexResourceState(fetchImages);
+  const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources} = useIndexResourceState(fetchImages);
 
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
     setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
-  }, [selectedResources]);
-
+    if(removeImageId){
+      removeSelectedResources(removeImageId)
+      setRemoveImageId([]);
+    }
+  }, [selectedResources,removeImageId]);
 
   const modalHandler = () => {
     const selectedRows = selectedResources.map((id) => {
-      const selectedImage = fetchImages.find((image) => image.id === id);
+      const selectedImage = fetchImageObject.find((image) => image.id === id);
       if (selectedImage) {
         return {
           imageURL: selectedImage.imageURL,
           name: selectedImage.imageName,
-          category: selectedImage.category,
+          category: selectedImage.category, 
           color: selectedImage.colorName,
         };
       }
       return null;
     }).filter(Boolean);
-    setSelectedTableRow({
-      rows: selectedRows,
-    });
+      setSelectedTableRow({
+        rows: selectedRows,
+      });
     setIsModalButtonClick(true);
     shopify.modal.show('customize-image');
   }
@@ -367,7 +381,7 @@ export default function Template() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId)} loading={buttonRemoveLoading[imageId]}>
+            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId,id)} loading={buttonRemoveLoading[imageId]}>
                 <Icon source={DeleteIcon} tone="critical" />
             </Button>   
           </ButtonGroup>
@@ -412,7 +426,7 @@ export default function Template() {
     >
       <Modal id="customize-image" variant="max" onHide={() => setIsModalButtonClick(false)}>
         {isModalButtonClick && (
-          <ImageCustomization imageObject={selectedTableRow}/>
+          <ImageCustomization imageObjectData={selectedTableRow}/>
         )}
         <TitleBar title="Template Image Personalizer"></TitleBar>
       </Modal>
@@ -467,7 +481,7 @@ export default function Template() {
             prefix={<Icon source={SearchIcon}/>}
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder="Search By Template Name"
+            placeholder="Search"
             clearButton
             onClearButtonClick={() => handleSearchChange("")}
           />
@@ -489,7 +503,6 @@ export default function Template() {
                   {label: 'V-Neck', value: 'V-Neck'},
                   {label: 'Tank Top', value: 'Tank Top'},
                   {label: 'Mugs', value: 'Mugs'},
-
                 ]}
                 selected={selectedCategoryChoice}
                 onChange={handleCategoryChange}
@@ -510,6 +523,10 @@ export default function Template() {
               />
             </Box>
           </Popover>
+          <InlineStack gap='200'>
+            <Badge>Category: {selectedCategoryChoice == 'empty'? 'All category' : selectedCategoryChoice}</Badge>
+            <Badge>Color: {selectedColorChoice == 'empty'? 'All color' : selectedColorChoice}</Badge>
+          </InlineStack>
         </Box>
         <Box position="relative">  
           <IndexTable
