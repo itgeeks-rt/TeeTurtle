@@ -8,7 +8,8 @@ import {
     Button,
     Text,
     RangeSlider,
-    ButtonGroup
+    ButtonGroup,
+    MediaCard
   } from "@shopify/polaris";
 import '../assets/styles.css';
 import { useAppBridge} from '@shopify/app-bridge-react';
@@ -20,16 +21,20 @@ import html2canvas from 'html2canvas';
 import { useNavigate } from 'react-router-dom';
 
 
-export default function ImageCustomization({imageObject}) {
+export default function ImageCustomization({imageObjectData}) {
   const { t } = useTranslation();
 
-
   const navigate = useNavigate();
+  const imageObject = imageObjectData.rows;
   const baseUrl = variable.Base_Url;
   const shopify = useAppBridge();
-  const firstImageUrl = imageObject.rows[0].imageURL;
+  const [selectedImage, setSelectedImage] = useState(imageObject[0].imageURL);
+  const [selectedImageName, setSelectedImageName] = useState(imageObject[0].name);
+  const [selectedImageColor, setSelectedImageColor] = useState(imageObject[0].color);
+  const [selectedImageCategory, setSelectedImageCategory] = useState(imageObject[0].category);
   const [uploadLogo, setUploadLogo] = useState(null);
   const [logoBlob, setLogoBlob] = useState(null); 
+  const [logoBlobBase64, setLogoBlobBase64] = useState(null); 
   const validImageTypes = ["image/jpeg", "image/png"];
   const [logoMaxWidth, setLogoMaxWidth] = useState(50);
   const [logoPositionTop, setLogoPositionTop] = useState(50);
@@ -37,6 +42,7 @@ export default function ImageCustomization({imageObject}) {
   const [isButtonLoading, setIsButtonLoading] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [isButtonNavigate, setIsButtonNavigate] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
 
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
@@ -52,6 +58,15 @@ export default function ImageCustomization({imageObject}) {
   const handleChangeLogoPositionLeft = (value) => {
     setLogoPositionLeft(value);
   }
+
+  const handleThumbnailClick = (index,item) => {
+    setActiveIndex(index);
+    setSelectedImage(item.imageURL);
+    setSelectedImageName(item.name);
+    setSelectedImageColor(item.color);
+    setSelectedImageCategory(item.category);
+    setIsButtonNavigate(false);
+  };
  
   /* Logo upload for customization */
   const handleDropZoneLogo = useCallback((_dropFiles, acceptedFiles, _rejectedFiles) => {
@@ -61,10 +76,17 @@ export default function ImageCustomization({imageObject}) {
       setUploadLogo(file);
       const logoBlob = validImageTypes.includes(file.type) ? window.URL.createObjectURL(file) : NoteIcon;
       setLogoBlob(logoBlob); 
+
+      const reader = new FileReader(); 
+      reader.onloadend = () => {
+        setLogoBlobBase64(reader.result.split(',')[1]); // Save base64 encoded string
+      };
+      reader.readAsDataURL(file);
       setIsButtonDisabled(false);
     } else {
       setUploadLogo(null); 
       setLogoBlob(null); 
+      setLogoBlobBase64(null);
       shopify.toast.show('Maximum file size is 1MB', { isError: true });
       setIsButtonDisabled(true);
     }
@@ -134,11 +156,12 @@ export default function ImageCustomization({imageObject}) {
 
   const uploadImage = async (base64Image) => {
     const requesUploadBody = {
-      imageName: imageObject.imageName,
-      category: imageObject.category,  
-      colorName: imageObject.colorName,  
+      imageName: selectedImageName,
+      category: selectedImageColor,  
+      colorName: selectedImageCategory,  
       fileBase64: base64Image,
-      personalized: true
+      personalized: true,
+      logoBase64: logoBlobBase64,
     };
     try {
       const response = await fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
@@ -205,7 +228,7 @@ export default function ImageCustomization({imageObject}) {
                   objectFit: 'contain',  
                   objectPosition: 'center center',
               }}
-              src={firstImageUrl}
+              src={selectedImage}
             />
             {logoBlob && (
               <div className="logo-container" style={{position: "absolute", top: `${Math.min(logoPositionTop, 100)}%`, left: `${Math.min(logoPositionLeft, 100)}%`, maxWidth: `${logoMaxWidth}px`, width: '100%', transform: "translate(-50%, -50%)"}}>
@@ -246,6 +269,24 @@ export default function ImageCustomization({imageObject}) {
                 output
               />
             </Card>
+            <Box className="image-media__list">
+              {imageObject?.map((item, index) => (
+                <Box as="span" 
+                  key={index}
+                  onClick={() => handleThumbnailClick(index,item)}
+                  className={activeIndex === index ? 'swatch-image active' : 'swatch-image'}
+                >
+                  <Thumbnail
+                    className="asdd"
+                    size="Medium"
+                    alt={item.name}
+                    source={item.imageURL}
+                    category={item.category}
+                    color={item.color}
+                  />
+                </Box>
+              ))}
+            </Box>
             <ButtonGroup>
               {isButtonNavigate ? (
                 <Button 

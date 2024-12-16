@@ -322,7 +322,7 @@ export const getImageList = async (req, res, session) => {
   }
 
   result.pagination = pagination
-  result.allColors = allColors
+  result.colors = allColors
   delete result.count;
 
   return result
@@ -354,7 +354,7 @@ export const getImageList = async (req, res, session) => {
   }
 
   result.pagination = pagination
-  result.allColors = allColors
+  result.colors = allColors
   delete result.count;
 
   return result

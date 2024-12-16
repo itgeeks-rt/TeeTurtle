@@ -12,15 +12,21 @@ import {
   Icon,
   useBreakpoints,
   useIndexResourceState,
-  Spinner
+  Spinner,
+  Popover,
+  ChoiceList,
+  InlineStack,
+  Badge
 } from "@shopify/polaris";
 import '../assets/styles.css';
-import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
+import { Modal, TitleBar, useAppBridge} from '@shopify/app-bridge-react';
 import variable from '../Variable';
-import { useState, useEffect} from "react";
+import { useState, useEffect, useCallback} from "react";
 import { useTranslation } from "react-i18next";
 import { DeleteIcon } from '@shopify/polaris-icons';
 import FetchProduct from '../components/FetchProduct'
+import { SearchIcon } from '@shopify/polaris-icons';
+
 
 
 export default function Personalization() {
@@ -41,6 +47,14 @@ export default function Personalization() {
   const [buttonRemoveLoading, setButtonRemoveLoading] = useState(false);
   const [loadingSpinner, setLoadingSpinner] = useState(false);
   const [isModalButtonClick, setIsModalButtonClick] = useState(false);
+  const [popoverCategoryActive, setCategoryPopoverActive] = useState(false);
+  const [popoverColorActive, setColorPopoverActive] = useState(false);
+  const [templateColors, setTemplateColors] = useState([]);
+  const [selectedCategoryChoice, setSelectedCategoryChoice] = useState(['empty']);
+  const [selectedColorChoice, setSelectedColorChoice] = useState(['empty']);
+  const [selectedCategoryChoiceStr, setSelectedCategoryChoiceStr] = useState('empty');
+  const [selectedColorChoiceStr, setSelectedColorChoiceStr] = useState('empty');
+  const [removeImageId, setRemoveImageId] = useState([]);
   const [requestBody, setRequestBody] = useState({
     personalized: true,
     page: 1, 
@@ -64,6 +78,8 @@ export default function Personalization() {
       .then((data) => {
         const items = data?.result.rows || [];
         const itemPagination = data?.result.pagination || [];
+        const colors = data?.result.colors || [];
+        setTemplateColors(colors)
         setPagination(itemPagination);
         setFetchImages(items); 
         setLoadingSpinner(false);
@@ -100,9 +116,37 @@ export default function Personalization() {
     setRequestBody(updatedRequestBody);
   };
 
+  /* Sort by category */
+  const toggleCategoryPopoverActive = useCallback(() => setCategoryPopoverActive((popoverCategoryActive) => !popoverCategoryActive),[],);
+  const handleCategoryChange = useCallback((value) => {
+    setSelectedCategoryChoice(value), [];
+    setSelectedCategoryChoiceStr(value[0]);
+    setRequestBody({ page: currentPage, color: selectedColorChoiceStr, category: value[0], limit: listLimit, personalized: true });
+  });
+  const categoryPopupButton = (
+    <Button onClick={toggleCategoryPopoverActive} disclosure size="large">Sort by category</Button>
+  );
+
+   /* Sort by color */
+   const toggleColorPopoverActive = useCallback(() => setColorPopoverActive((popoverColorActive) => !popoverColorActive),[],);
+   const handleColorChange = useCallback((value) => {
+    setSelectedColorChoice(value), [];
+    setSelectedColorChoiceStr(value[0]);
+    setRequestBody({ page: currentPage, color: value[0], category: selectedCategoryChoiceStr, limit: listLimit, personalized: true });
+   });
+   const colorPopupButton = (
+     <Button onClick={toggleColorPopoverActive} disclosure size="large">Sort by color</Button>
+   );
+
+   const colorChoices = [
+    { label: 'All color', value: 'empty' }, // Include 'All color' as a default option
+    ...templateColors.map((color) => ({ label: color, value: color })),
+  ];
+
 
   /* Handle image deletion */
-  const removeTemplate = (imageId) => {
+  const removeTemplate = (imageId,id) => {
+    setRemoveImageId([id]);
     setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: true }));
     const requestDeleteBody = {
       imageId: imageId,
@@ -145,7 +189,7 @@ export default function Personalization() {
     plural: 'images',
   };
 
-  const {selectedResources, allResourcesSelected, handleSelectionChange} = useIndexResourceState(fetchImages);
+  const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources} = useIndexResourceState(fetchImages);
 
   const modalHandler = () => {
     setIsModalButtonClick(true)
@@ -160,11 +204,15 @@ export default function Personalization() {
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
     setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
-  }, [selectedResources]);
+    if(removeImageId){
+      removeSelectedResources(removeImageId)
+      setRemoveImageId([]);
+    }
+  }, [selectedResources,removeImageId]);
 
   const rowMarkup = fetchImages.map(
     (
-      { id, imageURL, imageName, createdAt, category, imageId, colorName },
+      { id, imageURL, logoUrl, imageName, createdAt, category, imageId, colorName },
       index,
     ) => (
       <IndexTable.Row
@@ -179,6 +227,12 @@ export default function Personalization() {
             alt=""
           />
         </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Thumbnail
+            source={logoUrl}
+            alt=""
+          />
+        </IndexTable.Cell>
         <IndexTable.Cell>{imageName}</IndexTable.Cell>
         <IndexTable.Cell>{category}</IndexTable.Cell>
         <IndexTable.Cell>{colorName}</IndexTable.Cell>
@@ -189,7 +243,7 @@ export default function Personalization() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId)} loading={buttonRemoveLoading[imageId]}>
+            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId,id)} loading={buttonRemoveLoading[imageId]}>
                 <Icon source={DeleteIcon} tone="critical" />
             </Button>   
           </ButtonGroup>
@@ -211,14 +265,57 @@ export default function Personalization() {
         <TitleBar title="All products"></TitleBar> 
       </Modal>  
       <Card padding={{ xs: '0', sm: '0' }}> 
-        <Box padding={{ xs: '400', sm: '400' }} borderBlockEndWidth="0165" borderColor="border-brand">
+        <Box padding={{ xs: '400', sm: '400' }} className="searchbar-with__filters" borderBlockEndWidth="0165" borderColor="border-brand">
           <TextField
+            prefix={<Icon source={SearchIcon}/>}
             value={searchValue}
             onChange={handleSearchChange}
-            placeholder="Search By Category/Name" 
+            placeholder="Search" 
             clearButton
             onClearButtonClick={() => handleSearchChange("")}
           />
+          <Popover
+            active={popoverCategoryActive}
+            activator={categoryPopupButton}
+            autofocusTarget="first-node" 
+            onClose={toggleCategoryPopoverActive}
+          >
+            <Box padding={{ xs: '400', sm: '400' }}>
+              <ChoiceList
+                choices={[
+                  {label: 'All category', value: 'empty'},
+                  {label: 'Classic Cotton', value: 'Classic Cotton'},
+                  {label: 'Premium Cotton', value: 'Premium Cotton'},
+                  {label: 'Long Sleeve', value: 'Long Sleeve'},
+                  {label: 'Crew Neck', value: 'Crew Neck'},
+                  {label: 'Hoodie', value: 'Hoodie'},
+                  {label: 'V-Neck', value: 'V-Neck'},
+                  {label: 'Tank Top', value: 'Tank Top'},
+                  {label: 'Mugs', value: 'Mugs'},
+                ]}
+                selected={selectedCategoryChoice}
+                onChange={handleCategoryChange}
+              />
+            </Box>
+          </Popover>
+          <Popover
+            active={popoverColorActive}
+            activator={colorPopupButton}
+            autofocusTarget="first-node" 
+            onClose={toggleColorPopoverActive}
+          >
+            <Box padding={{ xs: '400', sm: '400' }}>
+              <ChoiceList
+                choices={colorChoices}
+                selected={selectedColorChoice}
+                onChange={handleColorChange}
+              />
+            </Box>
+          </Popover>
+          <InlineStack gap='200'>
+            <Badge>Category: {selectedCategoryChoice == 'empty'? 'All category' : selectedCategoryChoice}</Badge>
+            <Badge>Color: {selectedColorChoice == 'empty'? 'All color' : selectedColorChoice}</Badge>
+          </InlineStack>
         </Box>
         <Box position="relative">  
           <IndexTable
@@ -232,6 +329,7 @@ export default function Personalization() {
             onSelectionChange={handleSelectionChange}
             headings={[
               { title: "Image" },
+              { title: "Logo" },
               { title: "Name" },
               { title: "Category" },
               { title: "Color" },
