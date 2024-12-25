@@ -1,5 +1,5 @@
 const Variables = {
-    Base_Url: "https://f71c-49-249-2-6.ngrok-free.app"
+    Base_Url: "https://c9a1-137-97-249-58.ngrok-free.app"
 };
   
 export default Variables; 

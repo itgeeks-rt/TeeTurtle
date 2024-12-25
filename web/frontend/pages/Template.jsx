@@ -32,8 +32,6 @@ import { NoteIcon } from '@shopify/polaris-icons';
 import ImageCustomization from '../components/ImageCustomization'
 import { SearchIcon } from '@shopify/polaris-icons';
 
-
-
 export default function Template() {
   const { t } = useTranslation();
   const listLimit = 7;
@@ -105,7 +103,6 @@ export default function Template() {
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log(data)
         const items = data?.result.rows || [];
         const itemPagination = data?.result.pagination || [];
         const colors = data?.result.colors || [];
@@ -314,7 +311,7 @@ export default function Template() {
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
     setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
-    if(removeImageId){
+    if(removeImageId.length){
       removeSelectedResources(removeImageId)
       setRemoveImageId([]);
     }
@@ -537,6 +534,7 @@ export default function Template() {
             selectedItemsCount={
               allResourcesSelected ? 'All' : selectedResources.length
             }
+            //promotedBulkActions={[{content: 'Delete file', destructive: true, onAction: () => console.log('Todo: implement bulk edit')}]}
             onSelectionChange={handleSelectionChange}
             headings={[
               { title: "Image" },

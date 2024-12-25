@@ -36,6 +36,13 @@ const QUERY = `query {
               image {
                 url
               }
+              media(first:1) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+              }
             }
           }
         }

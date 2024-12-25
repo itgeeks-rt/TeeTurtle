@@ -4,6 +4,9 @@
 .template-action__button .Polaris-Button__Spinner+.Polaris-Text--root {
     opacity: 0;
 }
+.image-media__list.disabled {
+    pointer-events: none;
+}
 .box-center__center {
     top: 50%;
     left: 50%;
@@ -29,6 +32,7 @@
     width: auto;
 }
 .searchbar-with__filters {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr auto auto;
     padding: 15px;
@@ -47,4 +51,42 @@
 }
 .swatch-image.active .Polaris-Thumbnail {
     border: 1px solid #000;
+}
+.product-list-item {
+    border-bottom: var(--p-border-width-025) solid var(--p-color-border-brand);
+}
+.product-list-item.variant-element .Polaris-ResourceItem {
+    padding-left: 20px;
+}
+.Polaris-IndexTable__TableCell--first {
+    width: 40px;
+}
+.sort-by__products {
+    padding: 10px;
+}
+.sort-by__products {
+    padding: 10px;
+}
+.sort-by__products ul {
+    gap: 5px;
+}
+.sort-by__products>button {
+    margin-top: 2px;
+}
+.logo-image__item {
+    padding: 15px;
+    position: relative;
+    border-radius: 10px;
+    cursor: pointer;
+} 
+.logo-image__item:hover {
+    background: #f4f4f4;
+}
+.logo-image__item .Polaris-Thumbnail--sizeLarge {
+    width: 100%;
+}
+.logo-image__item .Polaris-Choice {
+    position: absolute;
+    top: 15px;
+    left: 20px;
 }

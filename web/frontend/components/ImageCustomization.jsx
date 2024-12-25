@@ -8,17 +8,21 @@ import {
     Button,
     Text,
     RangeSlider,
+    InlineStack,
     ButtonGroup,
-    MediaCard
+    Icon
   } from "@shopify/polaris";
 import '../assets/styles.css';
-import { useAppBridge} from '@shopify/app-bridge-react';
-import { useState, useCallback, useRef} from "react";
+import { Modal, TitleBar, useAppBridge} from '@shopify/app-bridge-react';
+import { useState, useCallback, useRef, useEffect} from "react";
 import variable from '../Variable';
 import { useTranslation } from "react-i18next";
-import { NoteIcon } from '@shopify/polaris-icons'; 
+import { NoteIcon, XSmallIcon, CheckCircleIcon } from '@shopify/polaris-icons'; 
 import html2canvas from 'html2canvas';
 import { useNavigate } from 'react-router-dom';
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
+import LogoLibrary from '../components/LogoLibrary'
 
 
 export default function ImageCustomization({imageObjectData}) {
@@ -26,12 +30,10 @@ export default function ImageCustomization({imageObjectData}) {
 
   const navigate = useNavigate();
   const imageObject = imageObjectData.rows;
+  const imageLength = parseInt(imageObject.length);
   const baseUrl = variable.Base_Url;
   const shopify = useAppBridge();
   const [selectedImage, setSelectedImage] = useState(imageObject[0].imageURL);
-  const [selectedImageName, setSelectedImageName] = useState(imageObject[0].name);
-  const [selectedImageColor, setSelectedImageColor] = useState(imageObject[0].color);
-  const [selectedImageCategory, setSelectedImageCategory] = useState(imageObject[0].category);
   const [uploadLogo, setUploadLogo] = useState(null);
   const [logoBlob, setLogoBlob] = useState(null); 
   const [logoBlobBase64, setLogoBlobBase64] = useState(null); 
@@ -40,9 +42,15 @@ export default function ImageCustomization({imageObjectData}) {
   const [logoPositionTop, setLogoPositionTop] = useState(50);
   const [logoPositionLeft, setLogoPositionLeft] = useState(50);
   const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const [imageStatus, setImageStatus] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [isButtonNavigate, setIsButtonNavigate] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [savedFilesCount, setSavedFilesCount] = useState(0);
+  const [disableActions, setDisableActions] = useState(false);
+  const [downloadImageObject, setDownloadImageObject] = useState([]);
+  const [isModalButtonClick, setIsModalButtonClick] = useState(false);
+  const [selectLogoFromLibrary, setSelectLogoFromLibrary] = useState(false);
 
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
@@ -62,9 +70,6 @@ export default function ImageCustomization({imageObjectData}) {
   const handleThumbnailClick = (index,item) => {
     setActiveIndex(index);
     setSelectedImage(item.imageURL);
-    setSelectedImageName(item.name);
-    setSelectedImageColor(item.color);
-    setSelectedImageCategory(item.category);
     setIsButtonNavigate(false);
   };
  
@@ -92,9 +97,60 @@ export default function ImageCustomization({imageObjectData}) {
     }
   }, []); 
 
-  const takeScreenshot = async (type) => {
+  const modalLogoLibrary = () => {
+    setIsModalButtonClick(true);
+  }
+
+  /* Download images in zip */
+  useEffect(() => {
+    const createZip = async () => {
+      if (downloadImageObject.length === imageLength) {
+        try {
+          const zip = new JSZip();
+          const folder = zip.folder("Personalizer");
+          downloadImageObject.forEach((image) => {
+            const base64Data = image.base64.split(",")[1];
+            folder.file(`${image.name}.jpg`, base64Data, { base64: true });
+          });
+          const zipContent = await zip.generateAsync({ type: "blob" });
+          saveAs(zipContent, "Personalizer.zip");
+          setDownloadImageObject([]);
+        } catch (error) {
+          console.error("Error creating ZIP file:", error);
+        }
+      }
+    };
+    createZip();
+  }, [downloadImageObject, imageLength]); 
+
+
+  useEffect(() => {
+    if(selectLogoFromLibrary){
+      setLogoBlob(selectLogoFromLibrary);
+      setSelectLogoFromLibrary(false);
+      setIsButtonDisabled(false);
+    }
+  },[selectLogoFromLibrary])
+
+  console.log(selectLogoFromLibrary)
+ 
+  const takeScreenshotApi = async(type) => {
+    type == 'saved'? setIsButtonLoading(true): null;
+    setDownloadImageObject([]);
+    setDisableActions(true); 
+    setImageStatus(true);
+    for (let index in imageObject){
+      let itemIndex = parseInt(index)
+      setActiveIndex(parseInt(itemIndex));
+      let item = imageObject[itemIndex];
+      setSelectedImage(item.imageURL);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      await takeScreenshot(item, itemIndex+1, type);
+      setSavedFilesCount(itemIndex+1);
+    }
+  }
+  const takeScreenshot = async (item, itemIndex, type) => {
     if (mediaRef.current) {
-      type == 'saved'? setIsButtonLoading(true): null; 
       try {
         const canvas = await html2canvas(mediaRef.current, {
           scale: 2,
@@ -102,7 +158,6 @@ export default function ImageCustomization({imageObjectData}) {
           backgroundColor: null,
         });
   
-        
         const ctx = canvas.getContext('2d');
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const pixels = imageData.data;
@@ -139,26 +194,32 @@ export default function ImageCustomization({imageObjectData}) {
   
         const finalImage = trimmedCanvas.toDataURL('image/png', 1.0);
         if(type == 'download'){
-          const link = document.createElement('a');
-          link.href = finalImage;
-          link.download = 'Personalized.jpg';
-          link.click();
+          setDownloadImageObject((prevImages) => [
+            ...prevImages,
+            { base64: finalImage, name: item.color },
+          ]);
+          if(itemIndex == imageLength){
+            setIsButtonLoading(false);
+            setDisableActions(false); 
+            setTimeout(() => {
+              setImageStatus(false);
+            }, 5000);
+          }
           return;
         }
         const base64Image = finalImage.split(',')[1];
-        await uploadImage(base64Image);
+        await uploadImage(base64Image,item, itemIndex);
       } catch (error) {
         console.error('Error generating screenshot:', error);
       }
     }
   };
 
-
-  const uploadImage = async (base64Image) => {
+  const uploadImage = async (base64Image,item, itemIndex) => {
     const requesUploadBody = {
-      imageName: selectedImageName,
-      category: selectedImageColor,  
-      colorName: selectedImageCategory,  
+      imageName: item.name,
+      category: item.category,  
+      colorName: item.color,  
       fileBase64: base64Image,
       personalized: true,
       logoBase64: logoBlobBase64,
@@ -170,16 +231,26 @@ export default function ImageCustomization({imageObjectData}) {
         body: JSON.stringify(requesUploadBody),
       });
       const data = await response.json();
-      if(data && data.status){  
-        shopify.toast.show('Image uploaded successfully.', { duration: 5000});
-        setIsButtonNavigate(true);
-      }else if (data && data.message){
-        shopify.toast.show(data.message, {isError: true,}); 
+      if (data && !data.status && data.message){
+        console.error(data.message);
       }
-      setIsButtonLoading(false);
+      if(itemIndex == imageLength){
+        setIsButtonLoading(false);
+        setIsButtonNavigate(true);
+        setDisableActions(false); 
+        setTimeout(() => {
+          setImageStatus(false);
+        }, 5000);
+      }
     } catch (error) {
-      setIsButtonLoading(false);
-      shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
+      console.error('Something went wrong. Please try again later.');
+      if(itemIndex == imageLength){
+        setIsButtonLoading(false);
+        setDisableActions(false); 
+        setTimeout(() => {
+          setImageStatus(false);
+        }, 5000);
+      }
     }
   };
 
@@ -200,6 +271,7 @@ export default function ImageCustomization({imageObjectData}) {
           {uploadLogo.name}{' '}
         </Text>
         <Button
+          disabled={disableActions}
           variant="plain" 
           tone="critical"
           onClick={() => {
@@ -211,12 +283,18 @@ export default function ImageCustomization({imageObjectData}) {
         >
           Change
         </Button>
-      </BlockStack>
-    </Box>
+      </BlockStack> 
+    </Box> 
   );
 
   return (
     <Box padding={{ xs: '400', sm: '1000' }}>
+      <Modal open={isModalButtonClick} variant="large" onHide={() => setIsModalButtonClick(false)}>
+        {isModalButtonClick && (
+          <LogoLibrary setSelectLogoFromLibrary={setSelectLogoFromLibrary} setIsModalButtonClick={setIsModalButtonClick}/>
+        )}
+        <TitleBar title="Select Logo For Personalize"></TitleBar>
+      </Modal>
       <InlineGrid gap="1000" columns={{xs: 1, sm: 1, md: 2, lg: 2}}>
         <Box className="personalization-image__box"> 
           <Box ref={mediaRef} className="personalization-image__media">
@@ -237,39 +315,48 @@ export default function ImageCustomization({imageObjectData}) {
             )}
           </Box> 
         </Box>
-        <BlockStack gap="500">
-          <DropZone label="Upload your logo" onDrop={handleDropZoneLogo} accept={validImageTypes} variableHeight>
+        <BlockStack gap="500"> 
+          <InlineStack wrap={false} align="space-between">
+              <Text as="h2" variant="headingLg">Personalize your Image</Text>
+              <Button variant="primary" onClick={() => modalLogoLibrary()}>Logo Library</Button>
+          </InlineStack>
+          <DropZone label="Upload new logo"  onDrop={handleDropZoneLogo} accept={validImageTypes} variableHeight disabled={disableActions}>
               {uploadLogoFile}
               {logoUpload} 
           </DropZone>
           <BlockStack gap="500">
-            <Card>
-              <RangeSlider
-                label="Logo size" 
-                min={50}
-                max={250}
-                value={logoMaxWidth}
-                onChange={handleChangeLogoSize}
-                output
-              />
-            </Card>
-            <Card>
-              <RangeSlider
-                label="Logo position top"
-                value={logoPositionTop}
-                onChange={handleChangeLogoPositionTop}
-                output
-              />
-            </Card>
-            <Card>
-              <RangeSlider
-                label="Logo position left"
-                value={logoPositionLeft}
-                onChange={handleChangeLogoPositionLeft}
-                output
-              />
-            </Card>
-            <Box className="image-media__list">
+            <InlineGrid columns={3} gap="200">
+              <Card>
+                <RangeSlider
+                  disabled={disableActions}
+                  label="Logo size" 
+                  min={50}
+                  max={250}
+                  value={logoMaxWidth}
+                  onChange={handleChangeLogoSize}
+                  output
+                />
+              </Card>
+              <Card>
+                <RangeSlider
+                  disabled={disableActions}
+                  label="Logo position top"
+                  value={logoPositionTop}
+                  onChange={handleChangeLogoPositionTop}
+                  output
+                />
+              </Card>
+              <Card>
+                <RangeSlider
+                  disabled={disableActions}
+                  label="Logo position left"
+                  value={logoPositionLeft}
+                  onChange={handleChangeLogoPositionLeft}
+                  output
+                />
+              </Card>
+            </InlineGrid>
+            <Box className={disableActions ? 'image-media__list disabled' : 'image-media__list'}>
               {imageObject?.map((item, index) => (
                 <Box as="span" 
                   key={index}
@@ -284,6 +371,7 @@ export default function ImageCustomization({imageObjectData}) {
                     category={item.category}
                     color={item.color}
                   />
+                  <Text variant="bodySm" alignment="center" as="p">{item.color}</Text>
                 </Box>
               ))}
             </Box>
@@ -301,18 +389,44 @@ export default function ImageCustomization({imageObjectData}) {
                 <Button 
                   variant="primary" 
                   size="large" 
-                  onClick={() => takeScreenshot('saved')}  
+                  onClick={() => takeScreenshotApi('saved')}  
                   loading={isButtonLoading} 
                   disabled={isButtonDisabled}
                 >
-                  Save Personalized Template
+                 {imageLength > 1 ? 'Save All Templates': 'Save Template'}
                 </Button>
               )}
-              <Button variant="secondary" size="large" onClick={() => takeScreenshot('download')} disabled={isButtonDisabled}>Download Personalized Template</Button>
+              <Button variant="secondary" size="large" onClick={() => takeScreenshotApi('download')} disabled={isButtonDisabled}>{imageLength > 1 ? 'Download All Template': 'Download Template'}</Button>
             </ButtonGroup>
           </BlockStack>
         </BlockStack>
       </InlineGrid>
+      {imageStatus && (
+        <Box position="fixed" 
+          insetBlockEnd="500" 
+          insetInlineEnd="500" 
+          background="bg-fill-brand-active" 
+          color="text-brand-on-bg-fill" 
+          padding="300" 
+          borderRadius="200">
+            {savedFilesCount === imageLength ? (
+              <InlineStack gap="150">
+                <Icon
+                  source={CheckCircleIcon}
+                  tone="success"
+                />
+                <Text fontWeight="bold">
+                  All Templates Saved Successfully
+                </Text>
+                <Button icon={XSmallIcon} variant="monochromePlain" onClick={() => setImageStatus(false)}/>
+              </InlineStack>
+            ) : (
+              <Text fontWeight="bold">
+                {savedFilesCount} Template Saved, {imageLength - savedFilesCount} Remaining
+              </Text>
+            )}
+        </Box>
+      )}
     </Box>
   );
 }

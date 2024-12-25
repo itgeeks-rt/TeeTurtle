@@ -204,7 +204,7 @@ export default function Personalization() {
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
     setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
-    if(removeImageId){
+    if(removeImageId.length){
       removeSelectedResources(removeImageId)
       setRemoveImageId([]);
     }
@@ -212,7 +212,7 @@ export default function Personalization() {
 
   const rowMarkup = fetchImages.map(
     (
-      { id, imageURL, logoUrl, imageName, createdAt, category, imageId, colorName },
+      { id, imageURL, imageName, createdAt, category, imageId, colorName },
       index,
     ) => (
       <IndexTable.Row
@@ -224,12 +224,6 @@ export default function Personalization() {
         <IndexTable.Cell>
           <Thumbnail
             source={imageURL}
-            alt=""
-          />
-        </IndexTable.Cell>
-        <IndexTable.Cell>
-          <Thumbnail
-            source={logoUrl}
             alt=""
           />
         </IndexTable.Cell>
@@ -328,8 +322,7 @@ export default function Personalization() {
             }
             onSelectionChange={handleSelectionChange}
             headings={[
-              { title: "Image" },
-              { title: "Logo" },
+              { title: "Image", alignment: "start" },
               { title: "Name" },
               { title: "Category" },
               { title: "Color" },
