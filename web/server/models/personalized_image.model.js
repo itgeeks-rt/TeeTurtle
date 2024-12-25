@@ -21,9 +21,6 @@ const  personalized_image = (sequelize, Sequelize) => {
     },
     colorName: {
     type: Sequelize.STRING
-    },
-    logoUrl: {
-    type: Sequelize.STRING
     }
     });
     return personalized_image;

@@ -25,7 +25,12 @@ export const deleteImage = async (req, res) => {
    try {
     const session=req.currentSession
     const result = await services.deleteImage(req, res,session);
+    if(!result){
+    sendResponse(res,statusCode.BAD_REQUEST,false,ErrorMessage.DATA_NOT_FOUND)
+    }
+    else{
     sendResponse(res,statusCode.OK,true,SuccessMessage.DATA_DELETED,result)
+    }
    } catch (error) {
     console.log("error in deleteImage  : ",error);
     sendResponse(res,statusCode.INTERNAL_SERVER_ERROR,false,ErrorMessage.INTERNAL_SERVER_ERROR,error)
