@@ -20,16 +20,17 @@ import { useState, useEffect } from "react";
 import { SearchIcon } from '@shopify/polaris-icons';
 
 
-export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonClick}) {
+export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonClick, setLogoName, logoBlob}) {
 
-    const baseUrl = variable.Base_Url;
     let myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
 
+    const [selectedLogo, setSelectedLogo] = useState(logoBlob);
     const [fetchImages, setFetchImages] = useState([]);
     const [loadingSpinner, setLoadingSpinner] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null); 
     const [selectedImageLink, setSelectedImageLink] = useState(null); 
+    const [selectedLogoName, setSelectedLogoName] = useState(null); 
     const [searchValue, setSearchValue] = useState("");
     const [pagination, setPagination] = useState([]);
     const [hasNext, setHasNext] = useState(false);
@@ -40,11 +41,10 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
         limit: 7,
     });
 
-    // Fetch template images from the server using AJAX
+    // Fetch logo images from the server using AJAX
     useEffect(() => {
         setLoadingSpinner(true);
-        fetch(
-            `${baseUrl}/external/image/imagesList?shop=itgeeks-test.myshopify.com`,
+        fetch(`${variable.baseUrl}/external/logo/logoList?shop=${variable.shopUrl}`,
             {
                 method: "POST",
                 body: JSON.stringify(requestBody),
@@ -78,9 +78,11 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
     };
 
     // Handle checkbox change
-    const handleCheckboxChange = (imageId, imageLink) => {
+    const handleCheckboxChange = (imageId, imageLink, imageName) => {
+        setSelectedLogo(null);
         setSelectedImage(imageId === selectedImage ? null : imageId);
         setSelectedImageLink(imageId === selectedImage ? false : imageLink);
+        setSelectedLogoName(imageId === selectedImage ? false : imageName);
     };
 
     /* Update pagination status based on the response */
@@ -98,10 +100,10 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
 
     const buttonHandler = () => { 
         setSelectLogoFromLibrary(selectedImageLink);
+        setLogoName(selectedLogoName);
         setIsModalButtonClick(false);
-    }
+    } 
     
-
     return (
         <Box className="logo-image__bank">
             <Box padding={{ xs: '400', sm: '400' }} borderBlockEndWidth="0165" borderColor="border-brand">
@@ -109,27 +111,27 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
                     prefix={<Icon source={SearchIcon} />}
                     value={searchValue}
                     onChange={handleSearchChange}
-                    placeholder="Search products"
+                    placeholder="Search logos"
                     clearButton
                     onClearButtonClick={() => handleSearchChange("")}
                 />
             </Box>
             <Scrollable style={{ height: '500px' }}>
                 <Box padding={{ xs: '400', sm: '400' }}>
-                    <InlineGrid columns={6}>
+                    <InlineGrid columns={6} gap="050">
                         {fetchImages.map((image) => (
                             <Box key={image.id}>
-                                <div className="logo-image__item" onClick={() => handleCheckboxChange(image.id,image.imageURL)}>
+                                <div className="logo-image__item" data-checked={selectedImage === image.id || selectedLogo === image.logoURL} onClick={() => handleCheckboxChange(image.id,image.logoURL,image.logoName)}>
                                     <Thumbnail
                                         size="large"
-                                        alt={image.imageName}
-                                        source={image.imageURL}
+                                        alt={image.logoName}
+                                        source={image.logoURL}
                                     />
                                     <Checkbox
                                         id={image.id}
-                                        checked={selectedImage === image.id}
+                                        checked={selectedImage === image.id || selectedLogo === image.logoURL}
                                     />
-                                    <Text alignment="center">{image.imageName}</Text>
+                                    <Text alignment="center">{image.logoName}</Text>
                                 </div>
                             </Box>
                         ))}

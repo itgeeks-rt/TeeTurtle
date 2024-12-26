@@ -10,6 +10,7 @@ import {
     RangeSlider,
     InlineStack,
     ButtonGroup,
+    TextField,
     Icon
   } from "@shopify/polaris";
 import '../assets/styles.css';
@@ -19,7 +20,6 @@ import variable from '../Variable';
 import { useTranslation } from "react-i18next";
 import { NoteIcon, XSmallIcon, CheckCircleIcon } from '@shopify/polaris-icons'; 
 import html2canvas from 'html2canvas';
-import { useNavigate } from 'react-router-dom';
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import LogoLibrary from '../components/LogoLibrary'
@@ -28,13 +28,12 @@ import LogoLibrary from '../components/LogoLibrary'
 export default function ImageCustomization({imageObjectData}) {
   const { t } = useTranslation();
 
-  const navigate = useNavigate();
   const imageObject = imageObjectData.rows;
   const imageLength = parseInt(imageObject.length);
-  const baseUrl = variable.Base_Url;
   const shopify = useAppBridge();
   const [selectedImage, setSelectedImage] = useState(imageObject[0].imageURL);
   const [uploadLogo, setUploadLogo] = useState(null);
+  const [logoName, setLogoName] = useState(null);
   const [logoBlob, setLogoBlob] = useState(null); 
   const [logoBlobBase64, setLogoBlobBase64] = useState(null); 
   const validImageTypes = ["image/jpeg", "image/png"];
@@ -51,6 +50,7 @@ export default function ImageCustomization({imageObjectData}) {
   const [downloadImageObject, setDownloadImageObject] = useState([]);
   const [isModalButtonClick, setIsModalButtonClick] = useState(false);
   const [selectLogoFromLibrary, setSelectLogoFromLibrary] = useState(false);
+  const [imageGroupName, setImageGroupName] = useState("");
 
   let myHeaders = new Headers();
   myHeaders.append("Content-Type", "application/json");
@@ -67,18 +67,24 @@ export default function ImageCustomization({imageObjectData}) {
     setLogoPositionLeft(value);
   }
 
+  const imageGroupTitleChange = (value) => {
+    setImageGroupName(value);
+  }
+  
+
   const handleThumbnailClick = (index,item) => {
     setActiveIndex(index);
     setSelectedImage(item.imageURL);
-    setIsButtonNavigate(false);
-  };
+  }; 
  
   /* Logo upload for customization */
   const handleDropZoneLogo = useCallback((_dropFiles, acceptedFiles, _rejectedFiles) => {
     const file = acceptedFiles[0];
     const maxSize = 1 * 1024 * 1024;
     if (file && validImageTypes.includes(file.type) && file.size <= maxSize) {
+      setIsButtonNavigate(false);
       setUploadLogo(file);
+      setLogoName(file.name);
       const logoBlob = validImageTypes.includes(file.type) ? window.URL.createObjectURL(file) : NoteIcon;
       setLogoBlob(logoBlob); 
 
@@ -89,6 +95,7 @@ export default function ImageCustomization({imageObjectData}) {
       reader.readAsDataURL(file);
       setIsButtonDisabled(false);
     } else {
+      setLogoName(null);
       setUploadLogo(null); 
       setLogoBlob(null); 
       setLogoBlobBase64(null);
@@ -129,12 +136,15 @@ export default function ImageCustomization({imageObjectData}) {
       setLogoBlob(selectLogoFromLibrary);
       setSelectLogoFromLibrary(false);
       setIsButtonDisabled(false);
+      setIsButtonNavigate(false);
+      setSavedFilesCount(0);
+      setUploadLogo(null);
     }
   },[selectLogoFromLibrary])
 
-  console.log(selectLogoFromLibrary)
  
   const takeScreenshotApi = async(type) => {
+    setSavedFilesCount(0);
     type == 'saved'? setIsButtonLoading(true): null;
     setDownloadImageObject([]);
     setDisableActions(true); 
@@ -214,21 +224,24 @@ export default function ImageCustomization({imageObjectData}) {
       }
     }
   };
-
+  
   const uploadImage = async (base64Image,item, itemIndex) => {
-    const requesUploadBody = {
-      imageName: item.name,
+    const requestUploadBody = {
+      imageName: imageGroupName?imageGroupName:item.name,
       category: item.category,  
       colorName: item.color,  
       fileBase64: base64Image,
       personalized: true,
-      logoBase64: logoBlobBase64,
+      logoBase64: logoName != uploadLogo?.name ? null : logoBlobBase64,
+      logoName: logoName,
+      logoMimeType: uploadLogo?.type
     };
+
     try {
-      const response = await fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
+      const response = await fetch(`${variable.baseUrl}/external/image/uploadImage?shop=${variable.shopUrl}`, {
         method: 'POST',
         headers: myHeaders,
-        body: JSON.stringify(requesUploadBody),
+        body: JSON.stringify(requestUploadBody),
       });
       const data = await response.json();
       if (data && !data.status && data.message){
@@ -253,6 +266,7 @@ export default function ImageCustomization({imageObjectData}) {
       }
     }
   };
+
 
   const logoUpload = !uploadLogo && <DropZone.FileUpload actionHint="Accepts only .jpg and .png" />;
   const uploadLogoFile = uploadLogo && (
@@ -291,7 +305,7 @@ export default function ImageCustomization({imageObjectData}) {
     <Box padding={{ xs: '400', sm: '1000' }}>
       <Modal open={isModalButtonClick} variant="large" onHide={() => setIsModalButtonClick(false)}>
         {isModalButtonClick && (
-          <LogoLibrary setSelectLogoFromLibrary={setSelectLogoFromLibrary} setIsModalButtonClick={setIsModalButtonClick}/>
+          <LogoLibrary setSelectLogoFromLibrary={setSelectLogoFromLibrary} setLogoName={setLogoName} logoBlob={logoBlob} setIsModalButtonClick={setIsModalButtonClick}/>
         )}
         <TitleBar title="Select Logo For Personalize"></TitleBar>
       </Modal>
@@ -318,7 +332,7 @@ export default function ImageCustomization({imageObjectData}) {
         <BlockStack gap="500"> 
           <InlineStack wrap={false} align="space-between">
               <Text as="h2" variant="headingLg">Personalize your Image</Text>
-              <Button variant="primary" onClick={() => modalLogoLibrary()}>Logo Library</Button>
+              <Button variant="primary" onClick={() => modalLogoLibrary()} disabled={disableActions}>Logo Library</Button>
           </InlineStack>
           <DropZone label="Upload new logo"  onDrop={handleDropZoneLogo} accept={validImageTypes} variableHeight disabled={disableActions}>
               {uploadLogoFile}
@@ -356,6 +370,16 @@ export default function ImageCustomization({imageObjectData}) {
                 />
               </Card>
             </InlineGrid>
+            <TextField
+                label="Personalize Group Name"
+                size="medium"
+                maxLength={20}
+                value={imageGroupName}
+                onChange={imageGroupTitleChange}
+                clearButton
+                onClearButtonClick={() => imageGroupTitleChange("")}
+                disabled={disableActions}
+            />
             <Box className={disableActions ? 'image-media__list disabled' : 'image-media__list'}>
               {imageObject?.map((item, index) => (
                 <Box as="span" 
@@ -381,7 +405,7 @@ export default function ImageCustomization({imageObjectData}) {
                   variant="primary" 
                   size="large" 
                   disabled={isButtonDisabled}
-                  onClick={() => navigate("/personalization")} 
+                  onClick={() =>  window.open(variable.shopAppUrl+'/personalization', '_parent')} 
                 >
                   Go To Personalized Template
                 </Button>

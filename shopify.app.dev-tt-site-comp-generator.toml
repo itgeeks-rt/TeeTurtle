@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "2fdda72b3bd82ee5f71a1971cfe74d3e"
-application_url = "https://trends-anybody-weblog-investor.trycloudflare.com"
+application_url = "https://atlas-egypt-script-request.trycloudflare.com"
 embedded = true
 name = "Dev-TT-Site-Comp-Generator"
 handle = "dev-tt-site-comp-generator"
@@ -15,9 +15,9 @@ scopes = "write_products,write_files,write_themes,read_products"
 
 [auth]
 redirect_urls = [
-  "https://trends-anybody-weblog-investor.trycloudflare.com/auth/callback",
-  "https://trends-anybody-weblog-investor.trycloudflare.com/auth/shopify/callback",
-  "https://trends-anybody-weblog-investor.trycloudflare.com/api/auth/callback"
+  "https://atlas-egypt-script-request.trycloudflare.com/auth/callback",
+  "https://atlas-egypt-script-request.trycloudflare.com/auth/shopify/callback",
+  "https://atlas-egypt-script-request.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]

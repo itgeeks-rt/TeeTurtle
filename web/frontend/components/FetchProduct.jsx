@@ -28,7 +28,6 @@ import { ImageIcon, SearchIcon } from '@shopify/polaris-icons';
 export default function FetchProduct({ selectedTemplates }) {
     const { t } = useTranslation();
     const shopify = useAppBridge();
-    const baseUrl = variable.Base_Url;
 
     const [fetchProducts, setFetchProducts] = useState([]);
     const [productVariants, setProductVariants] = useState([]);
@@ -51,7 +50,7 @@ export default function FetchProduct({ selectedTemplates }) {
     // Fetch product data
     useEffect(() => {
         setLoadingSpinner(true);
-        fetch(`${baseUrl}/external/product/productList?shop=itgeeks-test.myshopify.com`, {
+        fetch(`${variable.baseUrl}/external/product/productList?shop=${variable.shopUrl}`, {
             method: "POST",
             headers: myHeaders,
             redirect: 'follow',
@@ -114,7 +113,7 @@ export default function FetchProduct({ selectedTemplates }) {
             productIdList: selectedItems,
             imageUrlList: selectedTemplates
         };
-        fetch(`${baseUrl}/external/product/uploadProductImage?shop=itgeeks-test.myshopify.com`, {
+        fetch(`${variable.baseUrl}/external/product/uploadProductImage?shop=${variable.shopUrl}`, {
             method: "POST",
             headers: myHeaders,
             redirect: 'follow',
