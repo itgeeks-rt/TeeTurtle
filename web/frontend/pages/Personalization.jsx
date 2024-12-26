@@ -33,7 +33,6 @@ export default function Personalization() {
   const { t } = useTranslation();
   const listLimit = 7;
   const shopify = useAppBridge(); 
-  const baseUrl = variable.Base_Url;
 
   // State variables for managing images, pagination, form inputs, and loading states
   const [fetchImages, setFetchImages] = useState([]);
@@ -68,7 +67,7 @@ export default function Personalization() {
   /* Fetch template images from the server using AJAX */
   useEffect(() => {
     setLoadingSpinner(true);
-    fetch(`${baseUrl}/external/image/imagesList?shop=itgeeks-test.myshopify.com`, {
+    fetch(`${variable.baseUrl}/external/image/imagesList?shop=${variable.shopUrl}`, {
       method: "POST",
       body: JSON.stringify(requestBody),
       headers: myHeaders,
@@ -152,7 +151,7 @@ export default function Personalization() {
       imageId: imageId,
       personalized: true
     };
-    fetch(`${baseUrl}/external/image/deleteImage?shop=itgeeks-test.myshopify.com`, {
+    fetch(`${variable.baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
       method: "DELETE",
       body: JSON.stringify(requestDeleteBody),
       headers: myHeaders,

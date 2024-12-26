@@ -27,16 +27,13 @@ import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
 import variable from '../Variable';
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { DeleteIcon } from '@shopify/polaris-icons';
-import { NoteIcon } from '@shopify/polaris-icons';
+import { DeleteIcon, SaveIcon, SearchIcon, NoteIcon } from '@shopify/polaris-icons';
 import ImageCustomization from '../components/ImageCustomization'
-import { SearchIcon } from '@shopify/polaris-icons';
 
 export default function Template() {
   const { t } = useTranslation();
   const listLimit = 7;
   const shopify = useAppBridge();
-  const baseUrl = variable.Base_Url;
 
   // State variables for managing images, pagination, form inputs, and loading states
   const [imageName, setImageName] = useState("");
@@ -95,7 +92,7 @@ export default function Template() {
    /* Fetch template images from the server using AJAX */
   useEffect(() => {
     setLoadingSpinner(true);
-    fetch(`${baseUrl}/external/image/imagesList?shop=itgeeks-test.myshopify.com`, {
+    fetch(`${variable.baseUrl}/external/image/imagesList?shop=${variable.shopUrl}`, {
       method: "POST",
       body: JSON.stringify(requestBody),
       headers: myHeaders,
@@ -194,7 +191,7 @@ export default function Template() {
       personalized: false
     };
 
-    fetch(`${baseUrl}/external/image/uploadImage?shop=itgeeks-test.myshopify.com`, {
+    fetch(`${variable.baseUrl}/external/image/uploadImage?shop=${variable.shopUrl}`, {
       method: "POST",
       body: JSON.stringify(requesUploadBody),
       headers: myHeaders,
@@ -238,7 +235,7 @@ export default function Template() {
       imageId: imageId,
       personalized: false
     };
-    fetch(`${baseUrl}/external/image/deleteImage?shop=itgeeks-test.myshopify.com`, {
+    fetch(`${baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
       method: "DELETE",
       body: JSON.stringify(requestDeleteBody),
       headers: myHeaders,
@@ -378,6 +375,9 @@ export default function Template() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
+            {/* <Button size="slim" tone="critical">
+                <Icon source={SaveIcon} tone="base" />
+            </Button>    */}
             <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId,id)} loading={buttonRemoveLoading[imageId]}>
                 <Icon source={DeleteIcon} tone="critical" />
             </Button>   
@@ -386,6 +386,13 @@ export default function Template() {
       </IndexTable.Row>
     ),
   ); 
+
+  const deleteSelectedFiles = () => {
+    const imagesToRemove = fetchImages.filter((image) =>
+      selectedResources.includes(image.id)
+    );
+    console.log(imagesToRemove)
+  }
   
   /* Sort by category */
   const toggleCategoryPopoverActive = useCallback(() => setCategoryPopoverActive((popoverCategoryActive) => !popoverCategoryActive),[],);
@@ -534,7 +541,7 @@ export default function Template() {
             selectedItemsCount={
               allResourcesSelected ? 'All' : selectedResources.length
             }
-            //promotedBulkActions={[{content: 'Delete file', destructive: true, onAction: () => console.log('Todo: implement bulk edit')}]}
+            //promotedBulkActions={[{content: 'Delete file', destructive: true, onAction: () => deleteSelectedFiles()}]}
             onSelectionChange={handleSelectionChange}
             headings={[
               { title: "Image" },
