@@ -2,6 +2,7 @@
 import dbConfig from "../config/db.config.js";
 import image_template  from "./image_template.model.js";
 import personalized_image  from "./personalized_image.model.js";
+import logo_image  from "./logo_image.model.js";
 
 import Sequelize from "sequelize"
 
@@ -26,6 +27,7 @@ db.sequelize = sequelize;
 
 db.image_template=image_template(sequelize,Sequelize)
 db.personalized_image=personalized_image(sequelize,Sequelize)
+db.logo_image=logo_image(sequelize,Sequelize)
 
   
 export default db;
