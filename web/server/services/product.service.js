@@ -3,6 +3,7 @@ import shopify from "../../shopify.js"
 export const getProductList = async (req, res, session) => {
   const {cursorAfter,cursorBefore,sortKey = "TITLE",sortBy=""} = req.body;
   let searchQuery = req.body?.searchQuery || ""
+  let searchValue=searchQuery
   console.log("new key --",sortBy);
   sortBy ? searchQuery=`${sortBy}:'${searchQuery}'` :null
   console.log("new key --",searchQuery);
@@ -33,6 +34,8 @@ const QUERY = `query {
             node {
               id
               title
+              sku
+              barcode
               media(first:1){
               edges{
               node{
@@ -61,10 +64,35 @@ const QUERY = `query {
         hasNextPage
     }
   }
-}`;
+}`; 
 
   const client = new shopify.api.clients.Graphql({ session });
   const response = await client.request(QUERY);
+  if(response.data.products?.edges?.length){
+    if(sortBy==='sku'){
+    
+    }
+    if(sortBy==='barcode'){
+      console.log(response.data.products.edges[0].node.variants.edges);
+      let filteredVaraints= response.data.products.edges[0].node.variants.edges.filter((node)=>{
+        return node.node.barcode===searchValue
+      })
+      response.data.products.edges[0].node.variants.edges=filteredVaraints  
+      console.log("filtered varaints-----",response.data.products.edges[0].node.variants.edges);
+    }
+    if (sortBy === 'variant_id') {
+      let filteredVaraints = response.data.products.edges[0].node.variants.edges.filter((node) => {
+        return node.node.id === `gid://shopify/ProductVariant/${searchValue}`
+      })
+      response.data.products.edges[0].node.variants.edges = filteredVaraints
+    }
+    if(sortBy==='variant_title'){
+      console.log(sortBy);
+      
+    }
+
+  }
+ 
   return response
 };
 
@@ -143,21 +171,21 @@ const variant_detach_media_mutation=`mutation productVariantDetachMedia($product
     return false
    }
 
-  const mediaIdList=responseData.data.productCreateMedia.media.map((media) => {
-    return media.id
-  });
-
-    const variantMedia = obj.variantsIds.map(variantId => {
-      return  {
-        "mediaIds": mediaIdList,
-        "variantId": variantId.split("__")[0]
-      }  
+      const mediaIdList=responseData.data.productCreateMedia.media.map((media) => {
+        return media.id
       });
-      const variantsVariables={
-        "productId":obj.productId,
-        "variantMedia":variantMedia
-  
-      }
+
+      const variantMedia = obj.variantsIds.map(variantId => {
+        return  {
+          "mediaIds": mediaIdList,
+          "variantId": variantId.split("__")[0]
+        }  
+        });
+        const variantsVariables={
+          "productId":obj.productId,
+          "variantMedia":variantMedia
+    
+        }
 
       const variantDetachMedia = obj.variantsIds
       .filter((variantId) => {
@@ -178,18 +206,11 @@ const variant_detach_media_mutation=`mutation productVariantDetachMedia($product
     
         }
         variantDetachMediaResponse=await client.request(variant_detach_media_mutation,{
-          variables:variantsDetachVariables
+        variables:variantsDetachVariables
         })
-        console.log("variantDetachMediaResponse--",variantDetachMediaResponse.data.productVariantDetachMedia.product);
-
-        
-
       }
-
-  
-    // console.log("variant variables----",variantsVariables.variantMedia[0].mediaIds);
-      variantResponse = await client.request(variant_append_media_mutaion, {
-      variables:variantsVariables
+         variantResponse = await client.request(variant_append_media_mutaion, {
+         variables:variantsVariables
     })
    }
 
