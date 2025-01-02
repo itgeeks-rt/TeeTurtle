@@ -25,6 +25,7 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
     let myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
 
+    const listLimit = 50;
     const [selectedLogo, setSelectedLogo] = useState(logoBlob);
     const [fetchImages, setFetchImages] = useState([]);
     const [loadingSpinner, setLoadingSpinner] = useState(false);
@@ -38,7 +39,7 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
     const [currentPage, setCurrentPage] = useState(1);
     const [requestBody, setRequestBody] = useState({
         page: 1,
-        limit: 7,
+        limit: listLimit,
     });
 
     // Fetch logo images from the server using AJAX
@@ -70,7 +71,7 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
     const handleSearchChange = (value) => {
         setSearchValue(value);
         const updatedRequestBody = {
-            limit: 7,
+            limit: listLimit,
             page: 1,
             ...(value && value.length >= 0 ? { searchQuery: value } : {}),
         };
@@ -118,7 +119,7 @@ export default function LogoLibrary({setSelectLogoFromLibrary, setIsModalButtonC
             </Box>
             <Scrollable style={{ height: '500px' }}>
                 <Box padding={{ xs: '400', sm: '400' }}>
-                    <InlineGrid columns={6} gap="050">
+                    <InlineGrid columns={6} gap="200">
                         {fetchImages.map((image) => (
                             <Box key={image.id}>
                                 <div className="logo-image__item" data-checked={selectedImage === image.id || selectedLogo === image.logoURL} onClick={() => handleCheckboxChange(image.id,image.logoURL,image.logoName)}>

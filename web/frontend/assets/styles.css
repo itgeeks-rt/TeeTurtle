@@ -79,6 +79,9 @@
     border-radius: 10px;
     cursor: pointer;
 } 
+.logo-image__item p {
+    margin-top: 5px;
+}
 .logo-image__item:hover,
 .logo-image__item[data-checked="true"] {
     background: #f4f4f4;
