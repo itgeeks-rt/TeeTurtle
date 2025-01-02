@@ -65,8 +65,8 @@ import {
     const [templateColors, setTemplateColors] = useState([]);
     const [fetchImageObject, setFetchImageObject] = useState([]);
     const [removeImageId, setRemoveImageId] = useState([]);
-    const [isHovered, setIsHovered] = useState(false);
-    const [isCopied, setIsCopied] = useState(false);
+    const [hoveredIndex, setHoveredIndex] = useState(null);
+    const [copiedId, setCopiedId] = useState(null);
     
     const [requestBody, setRequestBody] = useState({
       color: "empty",
@@ -170,13 +170,13 @@ import {
     };
   
 
-    const handleCopyLink=(logoURL)=>{
-        navigator.clipboard.writeText(logoURL) 
-        setIsCopied(true)
-        setTimeout(() => {
-          setIsCopied(false);
-        },2000)
-    }
+
+
+  const handleCopyLink = (id, link) => {
+    navigator.clipboard.writeText(link);
+    setCopiedId(id); 
+    setTimeout(() => setCopiedId(null), 2000); 
+  };
 
     /* Handle file drop event */
     const handleDropZoneDrop = useCallback((_dropFiles, acceptedFiles, _rejectedFiles) => {
@@ -315,7 +315,7 @@ import {
     );
   
   
-    const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources} = useIndexResourceState(fetchImages);
+    const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources,clearSelection} = useIndexResourceState(fetchImages);
   
     // Update the disabled state of the button whenever selectedResources changes
     useEffect(() => {
@@ -325,6 +325,16 @@ import {
         setRemoveImageId([]);
       }
     }, [selectedResources,removeImageId]);
+    
+    useEffect(() => {
+      console.log("copiedId",copiedId)
+      console.log("s",selectedResources)
+      if(copiedId){
+       // clearSelection()
+        removeSelectedResources([copiedId])
+        // setRemoveImageId([]);
+      }
+    }, [copiedId]);
    
 
   
@@ -380,18 +390,25 @@ import {
               alt=""
             />
           </IndexTable.Cell>
-          <IndexTable.Cell>{logoName}  
-               <Tooltip     children={Button} active={isHovered}  content="copy Link">
-            <Button  
-            transparent
-             onMouseEnter={() => setIsHovered(true)}  
-             onMouseLeave={() => setIsHovered(false)}
-             onClick={() => handleCopyLink(logoURL)} 
+          <IndexTable.Cell >
+           <Text alignment="flex">
+           {logoName}
+           <Tooltip content="Copy Link"
+            // active={hoveredIndex === index}
+            >
+            <Button 
+            // textAlign="end"
+            variant="tertiary"
+            size="micro"
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              onClick={() => handleCopyLink(id, logoURL)}
              >
-                <Icon source={isCopied  ? CheckIcon: LinkIcon}  />
+                <Icon source={copiedId === id ? CheckIcon : LinkIcon}  />
             
              </Button>
-               </Tooltip>
+               </Tooltip> </Text> 
+              
           </IndexTable.Cell>
 
 
@@ -453,7 +470,7 @@ import {
   
     return (
       <Page
-        title="Logo Bank"
+        title="Logo Library"
         primaryAction={{ content: "Create new Logo", onAction: () => shopify.modal.show('upload-image') }}   
       >
         <Modal id="customize-image" variant="max" onHide={() => setIsModalButtonClick(false)}>

@@ -235,7 +235,7 @@ export default function Template() {
       imageId: imageId,
       personalized: false
     };
-    fetch(`${baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
+    fetch(`${variable.baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
       method: "DELETE",
       body: JSON.stringify(requestDeleteBody),
       headers: myHeaders,

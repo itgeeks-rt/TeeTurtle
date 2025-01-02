@@ -22,13 +22,15 @@ export const uploadImage = async (req, res, session) => {
   const logoName=req.body.logoName
   const logoMimeType=req.body.logoMimeType
   let logoURL;
+  let isLogoExist
 
-  const isLogoExist = await logo_image.findOne({
+ logoBase64 && logoName ?  isLogoExist = await logo_image.findOne({
     where: {
       logoName: logoName
     },
     attributes: ['logoURL']
-  })
+  }) :
+  null
   logoURL=isLogoExist?.dataValues?.logoURL
 if(logoBase64 && logoName && logoMimeType && !isLogoExist){
 logoURL =  await uploadLogo(logoBase64,logoName,logoMimeType,session)
@@ -468,7 +470,7 @@ export const uploadLogo = async (logoBase64,logoName,logoMimeType,session) => {
     }
   }
   `
-
+console.log("creating file...");
 
 
   const fileResponse = await client.request(file_Create_Mutation, {
@@ -505,7 +507,6 @@ export const uploadLogo = async (logoBase64,logoName,logoMimeType,session) => {
         createdAt: createdAt,
         logoName: logoName,
       })
-console.log("logoURL 3",result.dataValues.logoURL);
 
       return result.dataValues.logoURL
   }

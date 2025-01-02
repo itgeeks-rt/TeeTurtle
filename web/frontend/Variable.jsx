@@ -1,5 +1,5 @@
 const Variables = {
-    baseUrl: "https://1cb9-137-97-249-58.ngrok-free.app",
+    baseUrl: "https://b35a-49-249-2-6.ngrok-free.app",
     shopUrl: "itgeeks-test.myshopify.com",
     shopAppUrl: "https://admin.shopify.com/store/itgeeks-test/apps/dev-tt-site-comp-generator"
 };
