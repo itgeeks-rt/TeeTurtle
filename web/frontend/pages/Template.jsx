@@ -20,19 +20,20 @@ import {
   Popover, 
   ChoiceList,
   Badge,
-  InlineStack
+  InlineStack,
+  Tooltip
 } from "@shopify/polaris";
 import '../assets/styles.css';
 import { Modal, TitleBar, useAppBridge } from '@shopify/app-bridge-react';
 import variable from '../Variable';
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { DeleteIcon, SaveIcon, SearchIcon, NoteIcon } from '@shopify/polaris-icons';
+import { DeleteIcon, SaveIcon, CheckIcon, LinkIcon, SearchIcon, NoteIcon } from '@shopify/polaris-icons';
 import ImageCustomization from '../components/ImageCustomization'
 
 export default function Template() {
   const { t } = useTranslation();
-  const listLimit = 7;
+  const listLimit = 20;
   const shopify = useAppBridge();
 
   // State variables for managing images, pagination, form inputs, and loading states
@@ -57,12 +58,12 @@ export default function Template() {
   const [selectedColorChoice, setSelectedColorChoice] = useState(['empty']);
   const [selectedCategoryChoiceStr, setSelectedCategoryChoiceStr] = useState('empty');
   const [selectedColorChoiceStr, setSelectedColorChoiceStr] = useState('empty');
-  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [selectedTableRow, setSelectedTableRow] = useState({});
   const [isModalButtonClick, setIsModalButtonClick] = useState(false);
   const [templateColors, setTemplateColors] = useState([]);
   const [fetchImageObject, setFetchImageObject] = useState([]);
   const [removeImageId, setRemoveImageId] = useState([]);
+  const [copiedId, setCopiedId] = useState(null);
   const [requestBody, setRequestBody] = useState({
     color: "empty",
     category: "empty",
@@ -100,6 +101,7 @@ export default function Template() {
     })
       .then((res) => res.json())
       .then((data) => {
+        clearSelection();
         const items = data?.result.rows || [];
         const itemPagination = data?.result.pagination || [];
         const colors = data?.result.colors || [];
@@ -217,46 +219,14 @@ export default function Template() {
   };
 
 
-  /* Reset form state after successful upload */
+  /* Reset form state after successfully upload the images */
   const resetForm = () => {
     setImageName("");
+    setColorName("");
     setSelected("Select");
     setUploadFile(null);
     setUploadedFileBase64("");
     setIsButtonEnabled(false);
-  };
-
-
-  /* Handle image deletion */
-  const removeTemplate = (imageId, id) => {
-    setRemoveImageId([id]);
-    setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: true }));
-    const requestDeleteBody = {
-      imageId: imageId,
-      personalized: false
-    };
-    fetch(`${baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
-      method: "DELETE",
-      body: JSON.stringify(requestDeleteBody),
-      headers: myHeaders,
-      redirect: 'follow' 
-    })
-    .then((res) => res.json())
-    .then((data) => { 
-      setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: false }));
-      if(data && data.status){
-        shopify.toast.show('Image template removed successfully.', {
-          duration: 5000,
-        });
-        setRequestBody({ page: currentPage, color: selectedColorChoiceStr, category: selectedCategoryChoiceStr, limit: listLimit, personalized: false });
-      }else if (data && data.message){
-        shopify.toast.show(data.message, {isError: true});
-      }
-    })
-    .catch((err) => {
-      shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
-      console.error(err)
-    });
   };
 
   const imageNameInput = (value) => {
@@ -302,17 +272,22 @@ export default function Template() {
     </Box>
   );
 
+  const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources, clearSelection} = useIndexResourceState(fetchImages);
 
-  const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources} = useIndexResourceState(fetchImages);
+  const handleCopyLink = (id, link) => {
+    navigator.clipboard.writeText(link);
+    setCopiedId(id);
+    setRemoveImageId([id]);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
-    setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
     if(removeImageId.length){
       removeSelectedResources(removeImageId)
       setRemoveImageId([]);
     }
-  }, [selectedResources,removeImageId]);
+  }, [removeImageId]);
 
   const modalHandler = () => {
     const selectedRows = selectedResources.map((id) => {
@@ -375,12 +350,15 @@ export default function Template() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            {/* <Button size="slim" tone="critical">
-                <Icon source={SaveIcon} tone="base" />
-            </Button>    */}
-            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId,id)} loading={buttonRemoveLoading[imageId]}>
-                <Icon source={DeleteIcon} tone="critical" />
-            </Button>   
+            <Tooltip content="Copy Link">
+              <Button
+                variant="tertiary"
+                size="micro"
+                onClick={() => handleCopyLink(id, imageURL)}
+              >
+                <Icon source={copiedId === id ? CheckIcon : LinkIcon} />
+              </Button>
+            </Tooltip> 
           </ButtonGroup>
         </IndexTable.Cell>
       </IndexTable.Row>
@@ -391,7 +369,39 @@ export default function Template() {
     const imagesToRemove = fetchImages.filter((image) =>
       selectedResources.includes(image.id)
     );
-    console.log(imagesToRemove)
+    const imageIdsToRemove = imagesToRemove.map(image => image.imageId);
+    if(imageIdsToRemove.length){
+      setButtonRemoveLoading(true);
+      const requestDeleteBody = {
+        imageIds: imageIdsToRemove,
+        personalized: false
+      };
+      fetch(`${variable.baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
+        method: "DELETE",
+        body: JSON.stringify(requestDeleteBody),
+        headers: myHeaders,
+        redirect: 'follow' 
+      })
+      .then((res) => res.json())
+      .then((data) => { 
+        clearSelection();
+        setButtonRemoveLoading(false);
+        if(data && data.status){
+          shopify.toast.show('Selected template removed successfully.', {
+            duration: 5000,
+          });
+          setRequestBody({ page: currentPage, color: selectedColorChoiceStr, category: selectedCategoryChoiceStr, limit: listLimit, personalized: false });
+        }else if (data && data.message){
+          shopify.toast.show(data.message, {isError: true});
+        }
+      })
+      .catch((err) => {
+        shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
+        console.error(err)
+      });
+    }
+    
+    console.log(imageIdsToRemove)
   }
   
   /* Sort by category */
@@ -420,13 +430,23 @@ export default function Template() {
     { label: 'All color', value: 'empty' }, // Include 'All color' as a default option
     ...templateColors.map((color) => ({ label: color, value: color })),
   ];
-  
+
+  const promotedBulkActions = [
+    {
+      content: <Button variant="monochromePlain">Use Template</Button>,
+      onAction: () => modalHandler(),
+    },
+    {
+      content: <Button variant="monochromePlain" loading={buttonRemoveLoading} icon={DeleteIcon}>Delete file</Button>,
+      destructive: true, 
+      onAction: () => deleteSelectedFiles()
+    }
+  ];
 
   return (
     <Page
       title="Templates"
       primaryAction={{ content: "Create new template", onAction: () => shopify.modal.show('upload-image') }}
-      secondaryActions ={[{content: "Use template", onAction: () => modalHandler(), disabled: isButtonDisabled}]}
     >
       <Modal id="customize-image" variant="max" onHide={() => setIsModalButtonClick(false)}>
         {isModalButtonClick && (
@@ -532,7 +552,7 @@ export default function Template() {
             <Badge>Color: {selectedColorChoice == 'empty'? 'All color' : selectedColorChoice}</Badge>
           </InlineStack>
         </Box>
-        <Box position="relative">  
+        <Box position="relative" className="index-table-element">  
           <IndexTable
             condensed={useBreakpoints().smDown}
             resourceName={resourceName}
@@ -541,7 +561,7 @@ export default function Template() {
             selectedItemsCount={
               allResourcesSelected ? 'All' : selectedResources.length
             }
-            //promotedBulkActions={[{content: 'Delete file', destructive: true, onAction: () => deleteSelectedFiles()}]}
+            promotedBulkActions={promotedBulkActions}
             onSelectionChange={handleSelectionChange}
             headings={[
               { title: "Image" },

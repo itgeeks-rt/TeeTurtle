@@ -21,6 +21,7 @@ export default function App() {
             <a href="/template" rel="home" />
             <a href="/template">Template</a>
             <a href="/personalization">Personalization</a> 
+            <a href="/logoLibrary">Logo Library</a> 
           </NavMenu>
           <Routes pages={pages} />
         </QueryProvider>

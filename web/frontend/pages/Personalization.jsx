@@ -16,22 +16,20 @@ import {
   Popover,
   ChoiceList,
   InlineStack,
-  Badge
+  Badge,
+  Tooltip
 } from "@shopify/polaris";
 import '../assets/styles.css';
 import { Modal, TitleBar, useAppBridge} from '@shopify/app-bridge-react';
 import variable from '../Variable';
 import { useState, useEffect, useCallback} from "react";
 import { useTranslation } from "react-i18next";
-import { DeleteIcon } from '@shopify/polaris-icons';
+import { DeleteIcon, SearchIcon, LinkIcon, CheckIcon } from '@shopify/polaris-icons';
 import FetchProduct from '../components/FetchProduct'
-import { SearchIcon } from '@shopify/polaris-icons';
-
-
 
 export default function Personalization() {
   const { t } = useTranslation();
-  const listLimit = 7;
+  const listLimit = 20;
   const shopify = useAppBridge(); 
 
   // State variables for managing images, pagination, form inputs, and loading states
@@ -42,7 +40,6 @@ export default function Personalization() {
   const [hasNext, setHasNext] = useState(false);
   const [hasPrevious, setHasPrevious] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
   const [buttonRemoveLoading, setButtonRemoveLoading] = useState(false);
   const [loadingSpinner, setLoadingSpinner] = useState(false);
   const [isModalButtonClick, setIsModalButtonClick] = useState(false);
@@ -54,6 +51,7 @@ export default function Personalization() {
   const [selectedCategoryChoiceStr, setSelectedCategoryChoiceStr] = useState('empty');
   const [selectedColorChoiceStr, setSelectedColorChoiceStr] = useState('empty');
   const [removeImageId, setRemoveImageId] = useState([]);
+  const [copiedId, setCopiedId] = useState(null);
   const [requestBody, setRequestBody] = useState({
     personalized: true,
     page: 1, 
@@ -75,6 +73,7 @@ export default function Personalization() {
     })
       .then((res) => res.json())
       .then((data) => {
+        clearSelection();
         const items = data?.result.rows || [];
         const itemPagination = data?.result.pagination || [];
         const colors = data?.result.colors || [];
@@ -144,35 +143,41 @@ export default function Personalization() {
 
 
   /* Handle image deletion */
-  const removeTemplate = (imageId,id) => {
-    setRemoveImageId([id]);
-    setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: true }));
-    const requestDeleteBody = {
-      imageId: imageId,
-      personalized: true
-    };
-    fetch(`${variable.baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
-      method: "DELETE",
-      body: JSON.stringify(requestDeleteBody),
-      headers: myHeaders,
-      redirect: 'follow' 
-    })
-    .then((res) => res.json())
-    .then((data) => { 
-      setButtonRemoveLoading((prev) => ({ ...prev, [imageId]: false }));
-      if(data && data.status){
-        shopify.toast.show('Image template removed successfully.', {
-          duration: 5000,
-        });
-        setRequestBody({ page: currentPage, limit: listLimit, personalized: true });
-      }else if (data && data.message){
-        shopify.toast.show(data.message, {isError: true});
-      }
-    })
-    .catch((err) => {
-      shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
-      console.error(err)
-    });
+  const deleteSelectedFiles = () => {
+    const imagesToRemove = fetchImages.filter((image) =>
+      selectedResources.includes(image.id)
+    );
+    const imageIdsToRemove = imagesToRemove.map(image => image.imageId);
+    if(imageIdsToRemove.length){
+      setButtonRemoveLoading(true);
+      const requestDeleteBody = {
+        imageIds: imageIdsToRemove,
+        personalized: true
+      };
+      fetch(`${variable.baseUrl}/external/image/deleteImage?shop=${variable.shopUrl}`, {
+        method: "DELETE",
+        body: JSON.stringify(requestDeleteBody),
+        headers: myHeaders,
+        redirect: 'follow' 
+      })
+      .then((res) => res.json())
+      .then((data) => { 
+        setButtonRemoveLoading(false);
+        clearSelection();
+        if(data && data.status){
+          shopify.toast.show('Image template removed successfully.', {
+            duration: 5000,
+          });
+          setRequestBody({ page: currentPage, limit: listLimit, personalized: true });
+        }else if (data && data.message){
+          shopify.toast.show(data.message, {isError: true});
+        }
+      })
+      .catch((err) => {
+        shopify.toast.show('Something went wrong. Please try again later.', { isError: true });
+        console.error(err)
+      });
+    }
   };
 
   const emptyStateMarkup = (
@@ -188,7 +193,15 @@ export default function Personalization() {
     plural: 'images',
   };
 
-  const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources} = useIndexResourceState(fetchImages);
+  const {selectedResources, allResourcesSelected, handleSelectionChange, removeSelectedResources, clearSelection} = useIndexResourceState(fetchImages);
+
+  const handleCopyLink = (id, link) => {
+    navigator.clipboard.writeText(link);
+    setCopiedId(id);
+    setRemoveImageId([id]);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
 
   const modalHandler = () => {
     setIsModalButtonClick(true)
@@ -202,12 +215,23 @@ export default function Personalization() {
 
   // Update the disabled state of the button whenever selectedResources changes
   useEffect(() => {
-    setIsButtonDisabled(!(selectedResources && selectedResources.length > 0));
     if(removeImageId.length){
       removeSelectedResources(removeImageId)
       setRemoveImageId([]);
     }
-  }, [selectedResources,removeImageId]);
+  }, [removeImageId]);
+
+  const promotedBulkActions = [
+    {
+      content: <Button variant="monochromePlain" onClick={() => modalHandler()}>Select Product</Button>,
+      onAction: () => modalHandler()
+    },
+    {
+      content: <Button variant="monochromePlain" loading={buttonRemoveLoading} icon={DeleteIcon}>Delete file</Button>,
+      destructive: true, 
+      onAction: () => deleteSelectedFiles()
+    }
+  ];
 
   const rowMarkup = fetchImages.map(
     (
@@ -236,9 +260,15 @@ export default function Personalization() {
         </IndexTable.Cell> 
         <IndexTable.Cell className="template-action__button">
           <ButtonGroup>
-            <Button size="slim" tone="critical" onClick={() => removeTemplate(imageId,id)} loading={buttonRemoveLoading[imageId]}>
-                <Icon source={DeleteIcon} tone="critical" />
-            </Button>   
+            <Tooltip content="Copy Link">
+              <Button
+                variant="tertiary"
+                size="micro"
+                onClick={() => handleCopyLink(id, imageURL)}
+              >
+                <Icon source={copiedId === id ? CheckIcon : LinkIcon} />
+              </Button>
+            </Tooltip>
           </ButtonGroup>
         </IndexTable.Cell>
       </IndexTable.Row>
@@ -248,9 +278,7 @@ export default function Personalization() {
   return (
     <Page
       title="Personalized Templates"
-      primaryAction={{ content: "Select Product", onAction: () => modalHandler(), disabled: isButtonDisabled }}
     >
-      
       <Modal id="select-product" onHide={() => setIsModalButtonClick(false)}>
         {isModalButtonClick ? (
           <FetchProduct selectedTemplates={selectedImageUrl}/>
@@ -319,6 +347,7 @@ export default function Personalization() {
             selectedItemsCount={
               allResourcesSelected ? 'All' : selectedResources.length
             }
+            promotedBulkActions={promotedBulkActions}
             onSelectionChange={handleSelectionChange}
             headings={[
               { title: "Image", alignment: "start" },

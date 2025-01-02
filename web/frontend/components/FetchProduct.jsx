@@ -37,6 +37,7 @@ export default function FetchProduct({ selectedTemplates }) {
     const [buttonUploadLoading, setButtonUploadLoading] = useState(false);
     const [sortByPopoverActive, setSortByPopoverActive] = useState(false);
     const [selectedSortByChoice, setSelectedSortByChoice] = useState(['empty']);
+    const [debounceTimeout, setDebounceTimeout] = useState(null);
     const [requestBody, setRequestBody] = useState({
         searchQuery: '',
         sortBy: '',
@@ -87,12 +88,18 @@ export default function FetchProduct({ selectedTemplates }) {
     // Handle search input change
     const handleSearchChange = (value) => {
         setSearchValue(value);
-        const updatedRequestBody = {
-            cursorAfter: '',
-            cursorBefore: '',
-            ...(value && value.length >= 0 ? { searchQuery: value } : {}),
-        };
-        setRequestBody(updatedRequestBody);
+         if (debounceTimeout) {
+            clearTimeout(debounceTimeout);
+        }
+        const timeout = setTimeout(() => {
+            const updatedRequestBody = {
+                cursorAfter: "",
+                cursorBefore: "",
+                ...(value && value.length >= 0 ? { searchQuery: value } : {}),
+            };
+            setRequestBody(updatedRequestBody);
+        }, 300);
+        setDebounceTimeout(timeout);
     };
 
     /* Sort by */

@@ -68,27 +68,46 @@ const QUERY = `query {
 
   const client = new shopify.api.clients.Graphql({ session });
   const response = await client.request(QUERY);
-  if(response.data.products?.edges?.length){
-    if(sortBy==='sku'){
-    
+  if(response.data.products?.edges?.length  && response.data.products?.edges?.length ){
+    if(sortBy==='sku'){   
+      console.log("in varant sku");
+      response.data.products.edges.forEach((node)=>{
+      let filteredVaraints = node.node.variants.edges.filter((node)=>{
+        return node.node.sku===searchValue
+        })
+        node.node.variants.edges=filteredVaraints
+     })  
     }
-    if(sortBy==='barcode'){
-      console.log(response.data.products.edges[0].node.variants.edges);
-      let filteredVaraints= response.data.products.edges[0].node.variants.edges.filter((node)=>{
-        return node.node.barcode===searchValue
-      })
-      response.data.products.edges[0].node.variants.edges=filteredVaraints  
-      console.log("filtered varaints-----",response.data.products.edges[0].node.variants.edges);
+    else if(sortBy==='barcode'){
+      console.log("in variant barcode");
+
+      response.data.products.edges.forEach((node)=>{
+        let filteredVaraints = node.node.variants.edges.filter((node)=>{
+          return node.node.barcode===searchValue
+          })
+          node.node.variants.edges=filteredVaraints
+          console.log("filteredVaraints",filteredVaraints);
+       })  
     }
-    if (sortBy === 'variant_id') {
-      let filteredVaraints = response.data.products.edges[0].node.variants.edges.filter((node) => {
-        return node.node.id === `gid://shopify/ProductVariant/${searchValue}`
-      })
-      response.data.products.edges[0].node.variants.edges = filteredVaraints
+    else if (sortBy === 'variant_id') {
+      console.log("in variant id");
+
+      response.data.products.edges.forEach((node)=>{
+        let filteredVaraints = node.node.variants.edges.filter((node)=>{
+          return node.node.id === `gid://shopify/ProductVariant/${searchValue}`
+          })
+          node.node.variants.edges=filteredVaraints
+       })  
     }
-    if(sortBy==='variant_title'){
-      console.log(sortBy);
-      
+   else if(sortBy==='variant_title'){
+    console.log("in variant title");
+    // const regex = new RegExp(searchValue, 'i'); 
+    // response.data.products.edges.forEach((node)=>{
+    //   let filteredVaraints = node.node.variants.edges.filter((node)=>{
+    //     return regex.test(node.node.title);
+    //   })
+    //     node.node.variants.edges=filteredVaraints
+    //  })  
     }
 
   }

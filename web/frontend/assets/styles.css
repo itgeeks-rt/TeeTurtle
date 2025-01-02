@@ -94,3 +94,6 @@
     top: 15px;
     left: 20px;
 }
+.Polaris-BulkActions__BulkActionButton .Polaris-Button.Polaris-Button:hover .Polaris-Spinner svg {
+    fill: var(--pc-button-icon-fill_disabled);
+}
