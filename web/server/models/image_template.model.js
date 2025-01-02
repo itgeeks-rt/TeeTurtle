@@ -1,29 +1,28 @@
-const  image_template = (sequelize, Sequelize) => {
-    const image_template = sequelize.define("image_template", {
-   
+const image_template = (sequelize, Sequelize) => {
+  const image_template = sequelize.define("image_template", {
     imageName: {
-    type: Sequelize.STRING  
+      type: Sequelize.STRING,
     },
     imageURL: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     category: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     imageId: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     createdAt: {
-    type: Sequelize.DATEONLY
+      type: Sequelize.DATEONLY,
     },
     updatedAt: {
-    type: Sequelize.DATE
+      type: Sequelize.DATE,
     },
     colorName: {
-    type: Sequelize.STRING
-    }
-    });
-    return image_template;
-    };
+      type: Sequelize.STRING,
+    },
+  });
+  return image_template;
+};
 
-    export default image_template
+export default image_template;

@@ -137,7 +137,6 @@ export const uploadLogo = async (req, res, session) => {
       })
 
       return result
-  
   }
   else {
     return false
@@ -210,12 +209,8 @@ export const getLogoList = async (req, res, session) => {
   return result;
 };
 export const deleteLogo = async (req, res, session) => {
-    console.log(
-        req.body
-    );
- 
-    const logoNameList = req.body.logoId
-   
+
+    const logoNameList = req.body.logoIds 
     const file_delete_Mutation = `mutation fileDelete($input: [ID!]!) {
     fileDelete(fileIds: $input) {
       deletedFileIds
@@ -229,24 +224,16 @@ export const deleteLogo = async (req, res, session) => {
   `
   
     const client = new shopify.api.clients.Graphql({ session });
-  
     const response = await client.request(file_delete_Mutation, {
       variables: {
-        "input": [logoNameList]
+        "input": logoNameList
       }
     });
-  
-  
-   
-  
-      const result = logo_image.destroy(
+    const result = logo_image.destroy(
         {
         where: {
-         logoId:logoNameList,
+         logoId: { [Op.in]: logoNameList },
      },
     })
     return result
-    
-  
-  
 };
