@@ -1,22 +1,25 @@
-import shopify from "../../shopify.js"
+import shopify from "../../shopify.js";
 
 export const getProductList = async (req, res, session) => {
-  const {cursorAfter,cursorBefore,sortKey = "TITLE",sortBy=""} = req.body;
-  let searchQuery = req.body?.searchQuery || ""
-  let searchValue=searchQuery
-  console.log("new key --",sortBy);
-  sortBy ? searchQuery=`${sortBy}:'${searchQuery}'` :null
-  console.log("new key --",searchQuery);
+  const {
+    cursorAfter,
+    cursorBefore,
+    sortKey = "TITLE",
+    sortBy = "",
+  } = req.body;
+  let searchQuery = req.body?.searchQuery || "";
+  let searchValue = searchQuery;
+  console.log("new key --", sortBy);
+  sortBy ? (searchQuery = `${sortBy}:'${searchQuery}'`) : null;
+  console.log("new key --", searchQuery);
 
-  const cursor =
-    cursorAfter ?
-      `first:10,query:"${searchQuery}",after:"${cursorAfter}",sortKey:${sortKey}` :
-      cursorBefore ?
-        `last:10,query:"${searchQuery}",before:"${cursorBefore}",sortKey:${sortKey}` :
-        `first:10,query:"${searchQuery}",sortKey:${sortKey}`;
-    
+  const cursor = cursorAfter
+    ? `first:10,query:"${searchQuery}",after:"${cursorAfter}",sortKey:${sortKey}`
+    : cursorBefore
+    ? `last:10,query:"${searchQuery}",before:"${cursorBefore}",sortKey:${sortKey}`
+    : `first:10,query:"${searchQuery}",sortKey:${sortKey}`;
 
-const QUERY = `query {
+  const QUERY = `query {
   products(${cursor}) {
     edges {
       node {
@@ -64,59 +67,57 @@ const QUERY = `query {
         hasNextPage
     }
   }
-}`; 
+}`;
 
   const client = new shopify.api.clients.Graphql({ session });
   const response = await client.request(QUERY);
-  if(response.data.products?.edges?.length  && response.data.products?.edges?.length ){
-    if(sortBy==='sku'){   
+  if (
+    response.data.products?.edges?.length &&
+    response.data.products?.edges?.length
+  ) {
+    if (sortBy === "sku") {
       console.log("in varant sku");
-      response.data.products.edges.forEach((node)=>{
-      let filteredVaraints = node.node.variants.edges.filter((node)=>{
-        return node.node.sku===searchValue
-        })
-        node.node.variants.edges=filteredVaraints
-     })  
-    }
-    else if(sortBy==='barcode'){
+      response.data.products.edges.forEach((node) => {
+        let filteredVaraints = node.node.variants.edges.filter((node) => {
+          return node.node.sku === searchValue;
+        });
+        node.node.variants.edges = filteredVaraints;
+      });
+    } else if (sortBy === "barcode") {
       console.log("in variant barcode");
 
-      response.data.products.edges.forEach((node)=>{
-        let filteredVaraints = node.node.variants.edges.filter((node)=>{
-          return node.node.barcode===searchValue
-          })
-          node.node.variants.edges=filteredVaraints
-          console.log("filteredVaraints",filteredVaraints);
-       })  
-    }
-    else if (sortBy === 'variant_id') {
+      response.data.products.edges.forEach((node) => {
+        let filteredVaraints = node.node.variants.edges.filter((node) => {
+          return node.node.barcode === searchValue;
+        });
+        node.node.variants.edges = filteredVaraints;
+        console.log("filteredVaraints", filteredVaraints);
+      });
+    } else if (sortBy === "variant_id") {
       console.log("in variant id");
 
-      response.data.products.edges.forEach((node)=>{
-        let filteredVaraints = node.node.variants.edges.filter((node)=>{
-          return node.node.id === `gid://shopify/ProductVariant/${searchValue}`
-          })
-          node.node.variants.edges=filteredVaraints
-       })  
+      response.data.products.edges.forEach((node) => {
+        let filteredVaraints = node.node.variants.edges.filter((node) => {
+          return node.node.id === `gid://shopify/ProductVariant/${searchValue}`;
+        });
+        node.node.variants.edges = filteredVaraints;
+      });
+    } else if (sortBy === "variant_title") {
+      console.log("in variant title");
+      // const regex = new RegExp(searchValue, 'i');
+      // response.data.products.edges.forEach((node)=>{
+      //   let filteredVaraints = node.node.variants.edges.filter((node)=>{
+      //     return regex.test(node.node.title);
+      //   })
+      //     node.node.variants.edges=filteredVaraints
+      //  })
     }
-   else if(sortBy==='variant_title'){
-    console.log("in variant title");
-    // const regex = new RegExp(searchValue, 'i'); 
-    // response.data.products.edges.forEach((node)=>{
-    //   let filteredVaraints = node.node.variants.edges.filter((node)=>{
-    //     return regex.test(node.node.title);
-    //   })
-    //     node.node.variants.edges=filteredVaraints
-    //  })  
-    }
-
   }
- 
-  return response
+
+  return response;
 };
 
 export const uploadProductImage = async (req, res, session) => {
-
   const { productIdList, imageUrlList } = req.body;
   const newList = imageUrlList.map((url) => ({
     alt: "Image",
@@ -142,9 +143,9 @@ export const uploadProductImage = async (req, res, session) => {
     }
   }
 }
-`
+`;
 
-const variant_append_media_mutaion=`mutation productVariantAppendMedia($productId: ID!, $variantMedia: [ProductVariantAppendMediaInput!]!) {
+  const variant_append_media_mutaion = `mutation productVariantAppendMedia($productId: ID!, $variantMedia: [ProductVariantAppendMediaInput!]!) {
   productVariantAppendMedia(productId: $productId, variantMedia: $variantMedia) {
     product {
       id
@@ -155,107 +156,105 @@ const variant_append_media_mutaion=`mutation productVariantAppendMedia($productI
       message
     }
   }
-}`
+}`;
 
-const variant_detach_media_mutation=`mutation productVariantDetachMedia($productId: ID!, $variantMedia: [ProductVariantDetachMediaInput!]!) {
+  const variant_detach_media_mutation = `mutation productVariantDetachMedia($productId: ID!, $variantMedia: [ProductVariantDetachMediaInput!]!) {
   productVariantDetachMedia(productId: $productId, variantMedia: $variantMedia) {
     product {
       id
     }
   }
-}`
+}`;
 
-
-    const client = new shopify.api.clients.Graphql({ session });
-    const allPromises = productIdList.map(async (obj) => {
+  const client = new shopify.api.clients.Graphql({ session });
+  const allPromises = productIdList.map(async (obj) => {
     const responseData = await client.request(product_create_media, {
       variables: {
-        "media": newList,
-        "productId": obj.productId,
+        media: newList,
+        productId: obj.productId,
+      },
+    });
+    let variantDetachMediaResponse;
+    let variantResponse;
+    if (obj?.variantsIds?.length) {
+      // console.log(obj);
+
+      const productId = obj.productId;
+      const mediaList = responseData.data.productCreateMedia.media;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      const isMediaReady = await checkMediaStatus(productId, mediaList, client);
+
+      if (!isMediaReady) {
+        return false;
       }
-    })
-    let variantDetachMediaResponse
-    let  variantResponse ;
-   if(obj?.variantsIds?.length){
-  
-    // console.log(obj);
 
-    const productId=obj.productId
-    const mediaList=responseData.data.productCreateMedia.media
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-   const isMediaReady= await checkMediaStatus(productId,mediaList,client);
-
-   if(!isMediaReady){
-    return false
-   }
-
-      const mediaIdList=responseData.data.productCreateMedia.media.map((media) => {
-        return media.id
-      });
-
-      const variantMedia = obj.variantsIds.map(variantId => {
-        return  {
-          "mediaIds": mediaIdList,
-          "variantId": variantId.split("__")[0]
-        }  
-        });
-        const variantsVariables={
-          "productId":obj.productId,
-          "variantMedia":variantMedia
-    
+      const mediaIdList = responseData.data.productCreateMedia.media.map(
+        (media) => {
+          return media.id;
         }
+      );
 
-      const variantDetachMedia = obj.variantsIds
-      .filter((variantId) => {
-        return variantId.split("__")[1] !== "undefined";
-      })
-      .map((variantId) => {
+      const variantMedia = obj.variantsIds.map((variantId) => {
         return {
-          mediaIds: variantId.split("__")[1],
+          mediaIds: mediaIdList,
           variantId: variantId.split("__")[0],
         };
       });
-    
-      if(variantDetachMedia.length){
+      const variantsVariables = {
+        productId: obj.productId,
+        variantMedia: variantMedia,
+      };
 
-        const variantsDetachVariables={
-          "productId":productId,
-          "variantMedia":variantDetachMedia
-    
-        }
-        variantDetachMediaResponse=await client.request(variant_detach_media_mutation,{
-        variables:variantsDetachVariables
+      const variantDetachMedia = obj.variantsIds
+        .filter((variantId) => {
+          return variantId.split("__")[1] !== "undefined";
         })
+        .map((variantId) => {
+          return {
+            mediaIds: variantId.split("__")[1],
+            variantId: variantId.split("__")[0],
+          };
+        });
+
+      if (variantDetachMedia.length) {
+        const variantsDetachVariables = {
+          productId: productId,
+          variantMedia: variantDetachMedia,
+        };
+        variantDetachMediaResponse = await client.request(
+          variant_detach_media_mutation,
+          {
+            variables: variantsDetachVariables,
+          }
+        );
       }
-         variantResponse = await client.request(variant_append_media_mutaion, {
-         variables:variantsVariables
-    })
-   }
+      variantResponse = await client.request(variant_append_media_mutaion, {
+        variables: variantsVariables,
+      });
+    }
 
-  //  console.log("variant error--",variantResponse?.data?.productVariantAppendMedia?.userErrors );
+    //  console.log("variant error--",variantResponse?.data?.productVariantAppendMedia?.userErrors );
 
-    if (responseData.data.productCreateMedia.mediaUserErrors.length > 0  ) {
-      return false
+    if (responseData.data.productCreateMedia.mediaUserErrors.length > 0) {
+      return false;
     }
     return responseData;
   });
 
-  const responses = await Promise.all(allPromises)
-
+  const responses = await Promise.all(allPromises);
 
   if (responses.includes(false)) {
-    console.log("error in image upload",responses.data);
-    return false
+    console.log("error in image upload", responses.data);
+    return false;
   }
-  return true
+  return true;
+};
 
-}
+const checkMediaStatus = async (productId, mediaList, client) => {
+  const count = mediaList.length;
 
-const checkMediaStatus=async (productId,mediaList,client)=>{
-  const count = mediaList.length
-
-  const query=`query MyQuery {
+  const query = `query MyQuery {
   product(id: "${productId}") {
     media(first: ${count}, reverse: true) {
       edges {
@@ -266,28 +265,23 @@ const checkMediaStatus=async (productId,mediaList,client)=>{
       }
     }
   }
-}`
+}`;
 
-const responseData = await client.request(query)
-let list=[]
-responseData.data.product.media.edges.forEach(media => {
-  list.push(media.node.status)  
-});
+  const responseData = await client.request(query);
+  let list = [];
+  responseData.data.product.media.edges.forEach((media) => {
+    list.push(media.node.status);
+  });
 
-
-if(list.includes("FAILED")){
-  console.log("status failed");
-  return false ;
-}
-else if(list.includes("PROCESSING") ) {
-  console.log("trying again...");
-checkMediaStatus(productId,mediaList,client)
-}
-else{
-  console.log(list);
-console.log(responseData.data.product.media.edges);
-  return true ;
-}
-
-
-}
+  if (list.includes("FAILED")) {
+    console.log("status failed");
+    return false;
+  } else if (list.includes("PROCESSING")) {
+    console.log("trying again...");
+    checkMediaStatus(productId, mediaList, client);
+  } else {
+    console.log(list);
+    console.log(responseData.data.product.media.edges);
+    return true;
+  }
+};

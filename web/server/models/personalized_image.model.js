@@ -1,32 +1,31 @@
-const  personalized_image = (sequelize, Sequelize) => {
-    const personalized_image = sequelize.define("personalized_image", {
-
+const personalized_image = (sequelize, Sequelize) => {
+  const personalized_image = sequelize.define("personalized_image", {
     imageName: {
-    type: Sequelize.STRING  
+      type: Sequelize.STRING,
     },
     imageURL: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     category: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     imageId: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     createdAt: {
-    type: Sequelize.DATEONLY
+      type: Sequelize.DATEONLY,
     },
     updatedAt: {
-    type: Sequelize.DATE
+      type: Sequelize.DATE,
     },
     colorName: {
-    type: Sequelize.STRING
+      type: Sequelize.STRING,
     },
     logoURL: {
-    type: Sequelize.STRING
-    }
-    });
-    return personalized_image;
-    };
+      type: Sequelize.STRING,
+    },
+  });
+  return personalized_image;
+};
 
-    export default personalized_image
+export default personalized_image;

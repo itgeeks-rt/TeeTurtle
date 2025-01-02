@@ -20,7 +20,8 @@ export const SuccessMessage = {
   ORDER_UPDATE_NOTIFICATION: "Order Update Notification.",
   LOGOUT_SUCCESS: "Logout Success.",
   AUTHENTICATE_APP: "Authenticate App",
-  REVIEW_CREATED: "Review is being processed in background, it will be created shortly in a few minutes.",
+  REVIEW_CREATED:
+    "Review is being processed in background, it will be created shortly in a few minutes.",
 };
 //Error messages
 export const ErrorMessage = {
@@ -53,5 +54,5 @@ export const ErrorMessage = {
   PLUGIN_NOT_EXIST: "plugin not added or Off.",
   DATA_NOT_UPDATED: "Data Not Updated.",
   IMAGE_NOT_FOUND: "Image Not found.",
-  SESSION_NOT_FOUND:"Session Not Found"
+  SESSION_NOT_FOUND: "Session Not Found",
 };
